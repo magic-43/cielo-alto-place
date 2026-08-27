@@ -1,0 +1,34 @@
+@import "tailwindcss";
+
+@theme {
+  /* Brand Colors — extracted from Cielo Alto logo */
+  --color-cielo-green: #2d6a2d;
+  --color-cielo-green-light: #4a9e4a;
+  --color-cielo-green-dark: #1a4a1a;
+  --color-cielo-earth: #8b5e3c;
+  --color-cielo-red: #c0392b;
+  --color-cielo-stone: #6b7280;
+  --color-cielo-cream: #faf7f2;
+  --color-cielo-white: #ffffff;
+  --color-cielo-dark: #1a1a1a;
+  --color-cielo-muted: #4a4a4a;
+  --color-cielo-border: #e5e0d8;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--color-cielo-white);
+  color: var(--color-cielo-dark);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Utility: large readable body text for elder-friendliness */
+.text-readable {
+  font-size: 1.0625rem; /* 17px */
+  line-height: 1.75;
+}
