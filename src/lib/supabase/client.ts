@@ -5,9 +5,7 @@ export function createClient() {
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseKey) {
-    throw new Error(
-      "Missing Supabase environment variables. Copy values from Piero Beach .env.local"
-    );
+    return null;
   }
 
   return createBrowserClient(supabaseUrl, supabaseKey);

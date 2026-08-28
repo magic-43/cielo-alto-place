@@ -6,9 +6,11 @@ import Image from "next/image";
 import { rooms, resort } from "@/data/resort";
 import type { RoomType } from "@/data/resort";
 import { ReservationProgress } from "@/components/ui/ReservationProgress";
-import { Upload, CheckCircle2, X, AlertCircle } from "lucide-react";
+import { Upload, CheckCircle2, X, AlertCircle, RotateCcw } from "lucide-react";
+import { useResortSettings } from "@/hooks/useResortSettings";
 
 type StepNumber = 1 | 2 | 3 | 4;
+const STORAGE_KEY = "cielo_reserve_draft";
 
 function formatToday() {
   const d = new Date();
@@ -35,6 +37,20 @@ function ReserveInner() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const preselectedSlug = searchParams.get("room");
 
+  // Read dynamic database settings for payments and booking
+  const {
+    gcashName,
+    gcashNumber,
+    gcashEnabled,
+    bankName,
+    bankAccountName,
+    bankAccountNumber,
+    bankEnabled,
+    extraPaxFee,
+    checkInTime,
+    checkOutTime,
+  } = useResortSettings();
+
   const [step, setStep] = useState<StepNumber>(1);
   const [room, setRoom] = useState<RoomType>(
     rooms.find((r) => r.slug === preselectedSlug) || rooms[0]
@@ -56,6 +72,67 @@ function ReserveInner() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
+  // 1. Restore state from sessionStorage on page load/refresh
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.step && [1, 2, 3, 4].includes(parsed.step)) setStep(parsed.step);
+        if (parsed.checkIn) setCheckIn(parsed.checkIn);
+        if (parsed.checkOut) setCheckOut(parsed.checkOut);
+        if (typeof parsed.extraGuests === "number") setExtraGuests(parsed.extraGuests);
+        if (parsed.roomSlug && !preselectedSlug) {
+          const matched = rooms.find((r) => r.slug === parsed.roomSlug);
+          if (matched) setRoom(matched);
+        }
+        if (parsed.roomType) setRoomType(parsed.roomType);
+        if (parsed.guestName) setGuestName(parsed.guestName);
+        if (parsed.guestEmail) setGuestEmail(parsed.guestEmail);
+        if (parsed.guestPhone) setGuestPhone(parsed.guestPhone);
+        if (parsed.specialRequests) setSpecialRequests(parsed.specialRequests);
+        if (parsed.paymentMethod) setPaymentMethod(parsed.paymentMethod);
+      }
+    } catch (err) {
+      console.warn("Could not restore saved booking draft:", err);
+    }
+  }, [preselectedSlug]);
+
+  // 2. Persist state to sessionStorage whenever user makes changes
+  useEffect(() => {
+    try {
+      const draft = {
+        step,
+        checkIn,
+        checkOut,
+        extraGuests,
+        roomSlug: room.slug,
+        roomType,
+        guestName,
+        guestEmail,
+        guestPhone,
+        specialRequests,
+        paymentMethod,
+      };
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(draft));
+    } catch (err) {
+      // Storage unavailable or disabled
+    }
+  }, [
+    step,
+    checkIn,
+    checkOut,
+    extraGuests,
+    room.slug,
+    roomType,
+    guestName,
+    guestEmail,
+    guestPhone,
+    specialRequests,
+    paymentMethod,
+  ]);
+
+  // Handle URL preselected room
   useEffect(() => {
     if (preselectedSlug) {
       const matched = rooms.find((r) => r.slug === preselectedSlug);
@@ -67,10 +144,30 @@ function ReserveInner() {
     }
   }, [preselectedSlug]);
 
+  // Clear booking draft and restart
+  const handleResetDraft = () => {
+    try {
+      sessionStorage.removeItem(STORAGE_KEY);
+    } catch (e) {}
+    setStep(1);
+    setCheckIn(formatToday());
+    setCheckOut(formatTomorrow());
+    setExtraGuests(0);
+    setRoom(rooms[0]);
+    setRoomType("fan");
+    setGuestName("");
+    setGuestEmail("");
+    setGuestPhone("");
+    setSpecialRequests("");
+    setProofFile(null);
+    setProofPreview(null);
+    setError("");
+  };
+
   const nights = calculateNights(checkIn, checkOut);
   const roomBase = room.basePaxRate * nights;
   const acCost = roomType === "ac" && room.hasAcOption ? room.acSurcharge * nights : 0;
-  const extraGuestCost = extraGuests * 500 * nights;
+  const extraGuestCost = extraGuests * extraPaxFee * nights;
   const totalAmount = roomBase + acCost + extraGuestCost;
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -195,7 +292,11 @@ function ReserveInner() {
         throw new Error(proofData.error || "Failed to upload payment proof.");
       }
 
-      // Success -> Route to confirmation page
+      // Success -> Clear draft & route to confirmation page
+      try {
+        sessionStorage.removeItem(STORAGE_KEY);
+      } catch (e) {}
+
       router.push(`/reserve/confirmation?ref=${reference}`);
     } catch (err: any) {
       console.error(err);
@@ -655,7 +756,9 @@ function ReserveInner() {
                     }`}
                   >
                     <span className="material-symbols-outlined text-primary text-[24px]">account_balance</span>
-                    <span className="font-bold text-xs sm:text-sm text-primary">Bank Transfer (BDO)</span>
+                    <span className="font-bold text-xs sm:text-sm text-primary">
+                      {bankName ? `Bank (${bankName})` : "Bank Transfer"}
+                    </span>
                   </button>
                 </div>
 
@@ -669,11 +772,11 @@ function ReserveInner() {
                     <div className="space-y-1 text-xs sm:text-sm text-on-surface">
                       <div className="flex justify-between">
                         <span className="text-on-surface-variant">Account Name:</span>
-                        <strong className="text-primary font-mono">Cielo Alto Place</strong>
+                        <strong className="text-primary font-mono">{gcashName}</strong>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-on-surface-variant">Account / Mobile Number:</span>
-                        <strong className="text-primary font-mono text-base font-bold">0995 385 5517</strong>
+                        <strong className="text-primary font-mono text-base font-bold">{gcashNumber}</strong>
                       </div>
                       <div className="flex justify-between border-t border-outline/10 pt-1.5 mt-1.5">
                         <span className="text-on-surface-variant">Amount to Send:</span>
@@ -686,15 +789,15 @@ function ReserveInner() {
                     <div className="space-y-1 text-xs sm:text-sm text-on-surface">
                       <div className="flex justify-between">
                         <span className="text-on-surface-variant">Bank Name:</span>
-                        <strong className="text-primary">BDO Unibank</strong>
+                        <strong className="text-primary">{bankName}</strong>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-on-surface-variant">Account Name:</span>
-                        <strong className="text-primary font-mono">Cielo Alto Place</strong>
+                        <strong className="text-primary font-mono">{bankAccountName}</strong>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-on-surface-variant">Account Number:</span>
-                        <strong className="text-primary font-mono text-base font-bold">0995-3855-517</strong>
+                        <strong className="text-primary font-mono text-base font-bold">{bankAccountNumber}</strong>
                       </div>
                       <div className="flex justify-between border-t border-outline/10 pt-1.5 mt-1.5">
                         <span className="text-on-surface-variant">Amount to Send:</span>
@@ -880,12 +983,23 @@ function ReserveInner() {
                 <div className="p-3.5 bg-surface-container-low rounded-xl border border-outline/10 text-xs text-on-surface-variant space-y-1">
                   <div className="flex justify-between">
                     <span>Check-in:</span>
-                    <strong className="text-on-surface">{checkIn} (2:00 PM)</strong>
+                    <strong className="text-on-surface">{checkIn} ({checkInTime})</strong>
                   </div>
                   <div className="flex justify-between">
                     <span>Check-out:</span>
-                    <strong className="text-on-surface">{checkOut} (12:00 PM)</strong>
+                    <strong className="text-on-surface">{checkOut} ({checkOutTime})</strong>
                   </div>
+                </div>
+
+                <div className="pt-2 text-center">
+                  <button
+                    type="button"
+                    onClick={handleResetDraft}
+                    className="inline-flex items-center gap-1.5 text-xs text-on-surface-variant hover:text-red-700 transition-colors cursor-pointer"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>Clear draft &amp; start over</span>
+                  </button>
                 </div>
               </div>
             </div>
