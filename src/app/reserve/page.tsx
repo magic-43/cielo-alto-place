@@ -52,12 +52,15 @@ function ReserveInner() {
   } = useResortSettings();
 
   const [step, setStep] = useState<StepNumber>(1);
-  const [room, setRoom] = useState<RoomType>(
-    rooms.find((r) => r.slug === preselectedSlug) || rooms[0]
-  );
+  const [room, setRoom] = useState<RoomType | null>(() => {
+    if (preselectedSlug) {
+      return rooms.find((r) => r.slug === preselectedSlug) || null;
+    }
+    return null;
+  });
   const [roomType, setRoomType] = useState<"fan" | "ac">("fan");
-  const [checkIn, setCheckIn] = useState(formatToday());
-  const [checkOut, setCheckOut] = useState(formatTomorrow());
+  const [checkIn, setCheckIn] = useState("");
+  const [checkOut, setCheckOut] = useState("");
   const [extraGuests, setExtraGuests] = useState(0);
   const [guestName, setGuestName] = useState("");
   const [guestEmail, setGuestEmail] = useState("");
@@ -106,7 +109,7 @@ function ReserveInner() {
         checkIn,
         checkOut,
         extraGuests,
-        roomSlug: room.slug,
+        roomSlug: room?.slug || "",
         roomType,
         guestName,
         guestEmail,
@@ -123,7 +126,7 @@ function ReserveInner() {
     checkIn,
     checkOut,
     extraGuests,
-    room.slug,
+    room,
     roomType,
     guestName,
     guestEmail,
@@ -150,10 +153,10 @@ function ReserveInner() {
       sessionStorage.removeItem(STORAGE_KEY);
     } catch (e) {}
     setStep(1);
-    setCheckIn(formatToday());
-    setCheckOut(formatTomorrow());
+    setCheckIn("");
+    setCheckOut("");
     setExtraGuests(0);
-    setRoom(rooms[0]);
+    setRoom(null);
     setRoomType("fan");
     setGuestName("");
     setGuestEmail("");
@@ -164,11 +167,12 @@ function ReserveInner() {
     setError("");
   };
 
-  const nights = calculateNights(checkIn, checkOut);
-  const roomBase = room.basePaxRate * nights;
-  const acCost = roomType === "ac" && room.hasAcOption ? room.acSurcharge * nights : 0;
-  const extraGuestCost = extraGuests * extraPaxFee * nights;
-  const totalAmount = roomBase + acCost + extraGuestCost;
+  const hasDates = Boolean(checkIn && checkOut && new Date(checkOut) > new Date(checkIn));
+  const nights = hasDates ? calculateNights(checkIn, checkOut) : 1;
+  const roomBase = room ? room.basePaxRate * (hasDates ? nights : 1) : 0;
+  const acCost = room && roomType === "ac" && room.hasAcOption ? room.acSurcharge * (hasDates ? nights : 1) : 0;
+  const extraGuestCost = hasDates ? extraGuests * extraPaxFee * nights : extraGuests * extraPaxFee;
+  const totalAmount = room ? roomBase + acCost + extraGuestCost : 0;
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -204,7 +208,7 @@ function ReserveInner() {
   // Step 1 Validation
   const handleStep1Next = () => {
     if (!checkIn || !checkOut) {
-      setError("Please select both check-in and check-out dates.");
+      setError("Please select both check-in and check-out dates before proceeding.");
       return;
     }
     if (new Date(checkOut) <= new Date(checkIn)) {
@@ -218,9 +222,31 @@ function ReserveInner() {
 
   // Step 2 Validation
   const handleStep2Next = () => {
+    if (!room) {
+      setError("Please choose a cabin or room before continuing.");
+      return;
+    }
     setError("");
     setStep(3);
     window.scrollTo({ top: 180, behavior: "smooth" });
+  };
+
+  // Step Progress Click Guard
+  const handleStepClick = (targetStep: StepNumber) => {
+    if (targetStep >= 2 && (!checkIn || !checkOut)) {
+      setError("Please select your stay dates in Step 1 first.");
+      return;
+    }
+    if (targetStep >= 3 && !room) {
+      setError("Please select a cabin in Step 2 first.");
+      return;
+    }
+    if (targetStep === 4 && (!guestName.trim() || !guestPhone.trim())) {
+      setError("Please complete guest details in Step 3 first.");
+      return;
+    }
+    setError("");
+    setStep(targetStep);
   };
 
   // Step 3 Validation
@@ -240,6 +266,10 @@ function ReserveInner() {
 
   // Step 4 Final Submission (Creates Booking & Uploads Payment Proof)
   const handleFinalSubmit = async () => {
+    if (!room) {
+      setError("Please select a cabin before submitting.");
+      return;
+    }
     if (!proofFile) {
       setError("Please attach your GCash or Bank Transfer payment receipt screenshot.");
       return;
@@ -338,7 +368,7 @@ function ReserveInner() {
       {/* ─────────────────────── STEP PROGRESS BAR ─────────────────────── */}
       <ReservationProgress
         currentStep={step}
-        onStepClick={(targetStep) => setStep(targetStep)}
+        onStepClick={(targetStep) => handleStepClick(targetStep)}
       />
 
       {/* ─────────────────────── MAIN WIZARD BODY ─────────────────────── */}
@@ -446,7 +476,8 @@ function ReserveInner() {
                 <button
                   type="button"
                   onClick={handleStep1Next}
-                  className="w-full bg-primary text-on-primary font-bold text-base h-[54px] rounded-xl flex items-center justify-center gap-2 hover:bg-primary-container hover:text-on-primary-container transition-colors shadow-md active:scale-95 cursor-pointer"
+                  disabled={!checkIn || !checkOut}
+                  className="w-full bg-primary text-on-primary font-bold text-base h-[54px] rounded-xl flex items-center justify-center gap-2 hover:bg-primary-container hover:text-on-primary-container transition-colors shadow-md active:scale-95 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   Continue to Select Cabin
                   <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
@@ -465,13 +496,15 @@ function ReserveInner() {
                     Choose Your Accommodations
                   </h2>
                   <p className="text-xs sm:text-sm text-on-surface-variant mt-1">
-                    Showing available cabins for {nights} {nights === 1 ? "night" : "nights"}.
+                    {hasDates
+                      ? `Showing available cabins for ${nights} ${nights === 1 ? "night" : "nights"}.`
+                      : "Please select a cabin from the list below."}
                   </p>
                 </div>
 
                 <div className="space-y-3.5">
                   {rooms.map((r) => {
-                    const isSelected = room.slug === r.slug;
+                    const isSelected = room?.slug === r.slug;
                     const isMiniCabin = r.slug === "mini-cabin";
                     const isOverCapacity = isMiniCabin && extraGuests > 0;
 
@@ -482,6 +515,7 @@ function ReserveInner() {
                           if (isOverCapacity) return;
                           setRoom(r);
                           if (!r.hasAcOption) setRoomType("fan");
+                          setError("");
                         }}
                         className={`p-4 rounded-xl border transition-all cursor-pointer flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center ${
                           isOverCapacity
@@ -512,6 +546,12 @@ function ReserveInner() {
                                   {r.tag}
                                 </span>
                               )}
+                              {isSelected && (
+                                <span className="text-[10px] bg-primary-container text-on-primary-container font-bold px-2 py-0.5 rounded flex items-center gap-1">
+                                  <span className="material-symbols-outlined text-[12px]">check</span>
+                                  Selected
+                                </span>
+                              )}
                             </div>
                             <span className="text-xs text-on-surface-variant block mt-0.5">
                               {r.beds} · {r.hasCR === "private" ? "Private CR" : "Shared CR"} · {r.standardGuests} Base Guests
@@ -526,10 +566,10 @@ function ReserveInner() {
 
                         <div className="flex sm:flex-col items-baseline sm:items-end justify-between w-full sm:w-auto shrink-0 border-t sm:border-t-0 pt-2 sm:pt-0 border-outline/10">
                           <div className="font-serif text-lg font-bold text-primary">
-                            ₱{(r.basePaxRate * nights).toLocaleString()}
+                            ₱{(r.basePaxRate * (hasDates ? nights : 1)).toLocaleString()}
                           </div>
                           <span className="text-[11px] text-on-surface-variant">
-                            for {nights} {nights === 1 ? "night" : "nights"}
+                            {hasDates ? `for ${nights} ${nights === 1 ? "night" : "nights"}` : "per night"}
                           </span>
                         </div>
                       </div>
@@ -538,40 +578,16 @@ function ReserveInner() {
                 </div>
 
                 {/* Cooling Option Selector */}
-                <div className="pt-2">
-                  <label className="text-xs font-bold uppercase tracking-wider text-primary block mb-3">
-                    Cooling Option for {room.name}
-                  </label>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                    <label
-                      className={`p-4 rounded-xl border cursor-pointer flex items-center justify-between transition-all ${
-                        roomType === "fan"
-                          ? "bg-surface-container-high border-primary ring-2 ring-primary/20"
-                          : "bg-surface-container-low border-outline/15 hover:border-primary/40"
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="radio"
-                          name="cooling"
-                          value="fan"
-                          checked={roomType === "fan"}
-                          onChange={() => setRoomType("fan")}
-                          className="w-4 h-4 text-primary"
-                        />
-                        <div>
-                          <div className="font-bold text-sm text-primary">Mountain Breeze Fan</div>
-                          <div className="text-xs text-on-surface-variant">Cool mountain night air</div>
-                        </div>
-                      </div>
-                      <span className="text-xs font-semibold text-primary">Included</span>
+                {room ? (
+                  <div className="pt-2">
+                    <label className="text-xs font-bold uppercase tracking-wider text-primary block mb-3">
+                      Cooling Option for {room.name}
                     </label>
 
-                    {room.hasAcOption ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                       <label
                         className={`p-4 rounded-xl border cursor-pointer flex items-center justify-between transition-all ${
-                          roomType === "ac"
+                          roomType === "fan"
                             ? "bg-surface-container-high border-primary ring-2 ring-primary/20"
                             : "bg-surface-container-low border-outline/15 hover:border-primary/40"
                         }`}
@@ -580,41 +596,73 @@ function ReserveInner() {
                           <input
                             type="radio"
                             name="cooling"
-                            value="ac"
-                            checked={roomType === "ac"}
-                            onChange={() => setRoomType("ac")}
+                            value="fan"
+                            checked={roomType === "fan"}
+                            onChange={() => setRoomType("fan")}
                             className="w-4 h-4 text-primary"
                           />
                           <div>
-                            <div className="font-bold text-sm text-primary">Air Conditioning</div>
-                            <div className="text-xs text-on-surface-variant">Recommended for afternoons</div>
+                            <div className="font-bold text-sm text-primary">Mountain Breeze Fan</div>
+                            <div className="text-xs text-on-surface-variant">Cool mountain night air</div>
                           </div>
                         </div>
-                        <span className="text-xs font-bold text-primary">
-                          +₱{(500 * nights).toLocaleString()}
-                        </span>
+                        <span className="text-xs font-semibold text-primary">Included</span>
                       </label>
-                    ) : (
-                      <div className="p-4 rounded-xl bg-surface-container-lowest border border-outline/10 opacity-60 flex items-center justify-between">
-                        <span className="text-xs text-on-surface-variant">AC Upgrade Not Available</span>
-                        <span className="text-xs text-on-surface-variant italic">Fan Only</span>
-                      </div>
-                    )}
+
+                      {room.hasAcOption ? (
+                        <label
+                          className={`p-4 rounded-xl border cursor-pointer flex items-center justify-between transition-all ${
+                            roomType === "ac"
+                              ? "bg-surface-container-high border-primary ring-2 ring-primary/20"
+                              : "bg-surface-container-low border-outline/15 hover:border-primary/40"
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <input
+                              type="radio"
+                              name="cooling"
+                              value="ac"
+                              checked={roomType === "ac"}
+                              onChange={() => setRoomType("ac")}
+                              className="w-4 h-4 text-primary"
+                            />
+                            <div>
+                              <div className="font-bold text-sm text-primary">Air Conditioning</div>
+                              <div className="text-xs text-on-surface-variant">Recommended for afternoons</div>
+                            </div>
+                          </div>
+                          <span className="text-xs font-bold text-primary">
+                            +₱{(room.acSurcharge * (hasDates ? nights : 1)).toLocaleString()}
+                          </span>
+                        </label>
+                      ) : (
+                        <div className="p-4 rounded-xl bg-surface-container-lowest border border-outline/10 opacity-60 flex items-center justify-between">
+                          <span className="text-xs text-on-surface-variant">AC Upgrade Not Available</span>
+                          <span className="text-xs text-on-surface-variant italic">Fan Only</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="p-4 rounded-xl bg-primary-container/20 border border-primary/20 text-xs text-primary font-medium flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[18px]">touch_app</span>
+                    Please click or tap one of the cabins above to select your room.
+                  </div>
+                )}
 
                 <div className="flex gap-3 pt-2">
                   <button
                     type="button"
                     onClick={() => setStep(1)}
-                    className="bg-surface-container-high text-primary font-semibold text-sm h-[54px] px-6 rounded-xl hover:bg-surface-variant transition-colors"
+                    className="bg-surface-container-high text-primary font-semibold text-sm h-[54px] px-6 rounded-xl hover:bg-surface-variant transition-colors cursor-pointer"
                   >
                     Back
                   </button>
                   <button
                     type="button"
                     onClick={handleStep2Next}
-                    className="flex-1 bg-primary text-on-primary font-bold text-sm h-[54px] rounded-xl flex items-center justify-center gap-2 hover:bg-primary-container hover:text-on-primary-container transition-colors shadow-md active:scale-95"
+                    disabled={!room}
+                    className="flex-1 bg-primary text-on-primary font-bold text-sm h-[54px] rounded-xl flex items-center justify-center gap-2 hover:bg-primary-container hover:text-on-primary-container transition-colors shadow-md active:scale-95 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     Continue to Guest Details
                     <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
@@ -918,15 +966,17 @@ function ReserveInner() {
                 style={{ clipPath: "polygon(0 0, 100% 10%, 100% 100%, 0 100%)" }}
               >
                 <Image
-                  src={room.heroImage}
-                  alt={room.name}
+                  src={room?.heroImage || "/images/book-ur-stay-cover.jpg"}
+                  alt={room?.name || "Cielo Alto Place"}
                   fill
                   sizes="(max-width: 1024px) 100vw, 40vw"
                   className="object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-primary/85 via-transparent to-transparent" />
                 <div className="absolute bottom-3 left-4 text-on-primary">
-                  <span className="font-serif text-lg font-bold block">{room.name}</span>
+                  <span className="font-serif text-lg font-bold block">
+                    {room ? room.name : "Select a Cabin"}
+                  </span>
                   <span className="text-xs text-primary-fixed flex items-center gap-1">
                     <span className="material-symbols-outlined text-[14px]">location_on</span>
                     Km 57 Marcos Highway, Tanay
@@ -943,21 +993,27 @@ function ReserveInner() {
                 <div className="space-y-3 text-xs sm:text-sm text-on-surface">
                   <div className="flex justify-between">
                     <span className="text-on-surface-variant">
-                      {room.name} ({nights} {nights === 1 ? "night" : "nights"})
+                      {room ? (
+                        `${room.name} (${hasDates ? `${nights} ${nights === 1 ? "night" : "nights"}` : "1 night"})`
+                      ) : (
+                        "Accommodation"
+                      )}
                     </span>
-                    <span className="font-semibold">₱{roomBase.toLocaleString()}</span>
+                    <span className="font-semibold">
+                      {room ? `₱${roomBase.toLocaleString()}` : "Not selected"}
+                    </span>
                   </div>
 
                   {acCost > 0 && (
                     <div className="flex justify-between text-primary">
-                      <span>AC Upgrade ({nights} {nights === 1 ? "night" : "nights"})</span>
+                      <span>AC Upgrade ({hasDates ? `${nights} ${nights === 1 ? "night" : "nights"}` : "1 night"})</span>
                       <span className="font-semibold">+₱{acCost.toLocaleString()}</span>
                     </div>
                   )}
 
                   {extraGuestCost > 0 && (
                     <div className="flex justify-between text-primary">
-                      <span>Extra Guests ({extraGuests} pax × {nights}n)</span>
+                      <span>Extra Guests ({extraGuests} pax × {hasDates ? nights : 1}n)</span>
                       <span className="font-semibold">+₱{extraGuestCost.toLocaleString()}</span>
                     </div>
                   )}
@@ -972,22 +1028,28 @@ function ReserveInner() {
                   <div className="flex justify-between items-baseline">
                     <span className="font-serif text-lg font-bold text-primary">Total Payable</span>
                     <span className="font-serif text-3xl font-bold text-primary">
-                      ₱{totalAmount.toLocaleString()}
+                      {room && hasDates ? `₱${totalAmount.toLocaleString()}` : "₱0.00"}
                     </span>
                   </div>
                   <span className="text-[11px] text-on-surface-variant mt-1 block">
-                    Upload your proof of transfer in Step 4 to complete reservation.
+                    {room && hasDates
+                      ? "Upload your proof of transfer in Step 4 to complete reservation."
+                      : "Select your dates and cabin to calculate your stay total."}
                   </span>
                 </div>
 
                 <div className="p-3.5 bg-surface-container-low rounded-xl border border-outline/10 text-xs text-on-surface-variant space-y-1">
                   <div className="flex justify-between">
                     <span>Check-in:</span>
-                    <strong className="text-on-surface">{checkIn} ({checkInTime})</strong>
+                    <strong className="text-on-surface">
+                      {checkIn ? `${checkIn} (${checkInTime})` : "Not selected"}
+                    </strong>
                   </div>
                   <div className="flex justify-between">
                     <span>Check-out:</span>
-                    <strong className="text-on-surface">{checkOut} ({checkOutTime})</strong>
+                    <strong className="text-on-surface">
+                      {checkOut ? `${checkOut} (${checkOutTime})` : "Not selected"}
+                    </strong>
                   </div>
                 </div>
 
