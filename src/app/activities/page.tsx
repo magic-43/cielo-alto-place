@@ -2,78 +2,275 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { resort, activityImages } from "@/data/resort";
+import { Reveal } from "@/components/ui/Reveal";
 
 export const metadata: Metadata = {
-  title: "Activities",
+  title: "Guest Activities & Grounds | Cielo Alto Place",
   description:
-    "Bump cars, go-karts, bonfire nights, carnival games, grilling area, pet-friendly stays, Instagram spots and more — activities for everyone at Cielo Alto Place.",
+    "Bump cars, go-karts, bonfire nights, carnival games, scenic photo spots, and pet-friendly mountain grounds at Cielo Alto Place.",
+};
+
+const activityIcons: Record<string, string> = {
+  "Bump Cars & Go-Kart": "sports_motorsports",
+  "Bonfire Nights": "local_fire_department",
+  "Carnival Games": "attractions",
+  "Massage Chairs": "spa",
+  "Grilling Area": "outdoor_grill",
+  "Restaurant & Mini Mart": "storefront",
+  "Scenic Instagram Spots": "photo_camera",
+  "Pet-Friendly": "pets",
 };
 
 export default function ActivitiesPage() {
   return (
-    <div className="bg-white min-h-screen">
-      {/* Page header */}
-      <section className="relative h-[45vw] max-h-[420px] min-h-[240px] overflow-hidden">
-        <Image
-          src={activityImages[0]}
-          alt="Activities at Cielo Alto Place"
-          fill
-          priority
-          sizes="100vw"
-          className="object-cover"
-        />
-        <div className="absolute inset-0 bg-black/55" />
-        <div className="absolute inset-0 flex items-end p-6 sm:p-12">
-          <div className="text-white">
-            <p className="text-[12px] font-bold text-[#4a9e4a] uppercase tracking-widest mb-2">For Guests</p>
-            <h1 className="text-4xl sm:text-5xl font-bold">Activities</h1>
-            <p className="text-[17px] text-white/80 mt-2">Something fun for every guest at Cielo Alto Place</p>
+    <div className="bg-background min-h-screen pb-0">
+      {/* ─────────────────────── HERO SECTION ─────────────────────── */}
+      <section className="relative w-full h-[60vh] min-h-[440px] flex items-center justify-center overflow-hidden bg-primary">
+        <div className="absolute inset-0 z-0">
+          <Image
+            src="/images/activities/cover.jpg"
+            alt="Activities at Cielo Alto Place"
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/25 to-black/60" />
+        </div>
+
+        <div className="relative z-10 text-center px-5 sm:px-8 max-w-[1200px] mx-auto mt-12">
+          <Reveal>
+            <span className="text-xs font-bold uppercase tracking-[0.25em] text-primary-fixed mb-3 block">
+              Highland Adventures · Open to Guests
+            </span>
+            <h1 className="font-serif text-3xl sm:text-5xl md:text-6xl font-bold text-on-primary mb-5 leading-tight">
+              Activities & Experiences
+            </h1>
+            <p className="text-base sm:text-lg text-surface-container-high max-w-2xl mx-auto leading-relaxed font-normal">
+              From go-kart action and carnival games to calming bonfire nights under the stars, there is something for everyone.
+            </p>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ─────────────────────── ACTIVITIES GRID ─────────────────────── */}
+      <section className="py-16 md:py-24 px-5 sm:px-8 lg:px-12 max-w-[1200px] mx-auto">
+        <Reveal>
+          <div className="text-center mb-16 space-y-3">
+            <span className="text-xs uppercase tracking-[0.25em] text-tertiary font-bold">On-Site Recreation</span>
+            <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-primary">
+              Curated for All Ages
+            </h2>
+            <div className="w-12 h-1 bg-tertiary-container mx-auto rounded-full mt-2" />
+          </div>
+        </Reveal>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {resort.activities.map((activity, i) => {
+            const iconName = activityIcons[activity.name] || "park";
+            return (
+              <Reveal key={activity.name} delay={i * 60}>
+                <div className="bg-surface rounded-2xl p-6 border border-outline/15 shadow-sm hover:shadow-md transition-all h-full flex flex-col justify-between">
+                  <div>
+                    <div className="w-12 h-12 rounded-xl bg-primary-container text-on-primary-container flex items-center justify-center mb-5">
+                      <span className="material-symbols-outlined text-[24px]">
+                        {iconName}
+                      </span>
+                    </div>
+                    <h3 className="font-serif text-xl font-bold text-primary mb-2">
+                      {activity.name}
+                    </h3>
+                    <p className="text-on-surface-variant text-xs sm:text-sm leading-relaxed">
+                      {activity.description}
+                    </p>
+                  </div>
+                </div>
+              </Reveal>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* ─────────────────────── HIGHLAND MOMENTS BENTO GRID (Clean Photography - No Text Overlay) ─────────────────────── */}
+      <section className="py-16 md:py-24 bg-surface-container-low border-y border-outline/10 px-5 sm:px-8 lg:px-12">
+        <div className="max-w-[1200px] mx-auto">
+          <Reveal>
+            <div className="text-center mb-14 space-y-3">
+              <span className="text-xs uppercase tracking-[0.25em] text-tertiary font-bold block">Moments</span>
+              <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-primary">
+                Highland Moments
+              </h2>
+              <p className="text-sm text-on-surface-variant max-w-lg mx-auto">
+                Real glimpses of memories made across our ridge viewpoints, outdoor tracks, and evening bonfires.
+              </p>
+            </div>
+          </Reveal>
+
+          {/* Clean Editorial Bento Grid without text clutters */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 auto-rows-[220px]">
+            {/* Bento Item 1: Large Span 2x2 Feature */}
+            <Reveal className="sm:col-span-2 sm:row-span-2 relative rounded-2xl overflow-hidden shadow-sm group bg-surface-container">
+              <Image
+                src={activityImages[1] || activityImages[0]}
+                alt="Highland activity moment"
+                fill
+                sizes="(max-width: 768px) 100vw, 50vw"
+                className="object-cover transition-transform duration-700 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+            </Reveal>
+
+            {/* Bento Item 2: Tall Vertical 1x2 */}
+            <Reveal delay={70} className="sm:col-span-1 sm:row-span-2 relative rounded-2xl overflow-hidden shadow-sm group bg-surface-container">
+              <Image
+                src={activityImages[2]}
+                alt="Highland activity moment"
+                fill
+                sizes="(max-width: 768px) 100vw, 25vw"
+                className="object-cover transition-transform duration-700 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+            </Reveal>
+
+            {/* Bento Item 3: Standard 1x1 */}
+            <Reveal delay={120} className="sm:col-span-1 sm:row-span-1 relative rounded-2xl overflow-hidden shadow-sm group bg-surface-container">
+              <Image
+                src={activityImages[3]}
+                alt="Highland activity moment"
+                fill
+                sizes="(max-width: 768px) 50vw, 25vw"
+                className="object-cover transition-transform duration-700 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+            </Reveal>
+
+            {/* Bento Item 4: Standard 1x1 */}
+            <Reveal delay={170} className="sm:col-span-1 sm:row-span-1 relative rounded-2xl overflow-hidden shadow-sm group bg-surface-container">
+              <Image
+                src={activityImages[4]}
+                alt="Highland activity moment"
+                fill
+                sizes="(max-width: 768px) 50vw, 25vw"
+                className="object-cover transition-transform duration-700 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+            </Reveal>
+
+            {/* Bento Item 5: Wide Landscape 2x1 */}
+            <Reveal delay={200} className="sm:col-span-2 sm:row-span-1 relative rounded-2xl overflow-hidden shadow-sm group bg-surface-container">
+              <Image
+                src={activityImages[5]}
+                alt="Highland activity moment"
+                fill
+                sizes="(max-width: 768px) 100vw, 50vw"
+                className="object-cover transition-transform duration-700 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+            </Reveal>
+
+            {/* Bento Item 6: Tall 1x2 */}
+            <Reveal delay={240} className="sm:col-span-1 sm:row-span-2 relative rounded-2xl overflow-hidden shadow-sm group bg-surface-container">
+              <Image
+                src={activityImages[6]}
+                alt="Highland activity moment"
+                fill
+                sizes="(max-width: 768px) 100vw, 25vw"
+                className="object-cover transition-transform duration-700 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+            </Reveal>
+
+            {/* Bento Item 7: Standard 1x1 */}
+            <Reveal delay={280} className="sm:col-span-1 sm:row-span-1 relative rounded-2xl overflow-hidden shadow-sm group bg-surface-container">
+              <Image
+                src={activityImages[7]}
+                alt="Highland activity moment"
+                fill
+                sizes="(max-width: 768px) 50vw, 25vw"
+                className="object-cover transition-transform duration-700 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+            </Reveal>
+
+            {/* Bento Item 8: Standard 1x1 */}
+            <Reveal delay={320} className="sm:col-span-1 sm:row-span-1 relative rounded-2xl overflow-hidden shadow-sm group bg-surface-container">
+              <Image
+                src={activityImages[8]}
+                alt="Highland activity moment"
+                fill
+                sizes="(max-width: 768px) 50vw, 25vw"
+                className="object-cover transition-transform duration-700 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+            </Reveal>
+
+            {/* Bento Item 9: Wide Landscape 2x1 */}
+            <Reveal delay={360} className="sm:col-span-2 sm:row-span-1 relative rounded-2xl overflow-hidden shadow-sm group bg-surface-container">
+              <Image
+                src={activityImages[9] || activityImages[0]}
+                alt="Highland activity moment"
+                fill
+                sizes="(max-width: 768px) 100vw, 50vw"
+                className="object-cover transition-transform duration-700 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+            </Reveal>
+
+            {/* Bento Item 10: Standard 1x1 */}
+            <Reveal delay={400} className="sm:col-span-1 sm:row-span-1 relative rounded-2xl overflow-hidden shadow-sm group bg-surface-container">
+              <Image
+                src={activityImages[10] || activityImages[1]}
+                alt="Highland activity moment"
+                fill
+                sizes="(max-width: 768px) 50vw, 25vw"
+                className="object-cover transition-transform duration-700 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+            </Reveal>
+
+            {/* Bento Item 11: Standard 1x1 */}
+            <Reveal delay={440} className="sm:col-span-1 sm:row-span-1 relative rounded-2xl overflow-hidden shadow-sm group bg-surface-container">
+              <Image
+                src={activityImages[11] || activityImages[2]}
+                alt="Highland activity moment"
+                fill
+                sizes="(max-width: 768px) 50vw, 25vw"
+                className="object-cover transition-transform duration-700 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+            </Reveal>
           </div>
         </div>
       </section>
 
-      {/* Activities grid */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-14">
-          {resort.activities.map((activity) => (
-            <div key={activity.name} className="bg-[#faf7f2] rounded-2xl p-6 border border-gray-100 hover:shadow-sm transition-shadow">
-              <div className="text-5xl mb-4">{activity.icon}</div>
-              <h2 className="text-xl font-bold text-gray-900 mb-2">{activity.name}</h2>
-              <p className="text-[15px] text-gray-600 leading-relaxed">{activity.description}</p>
+      {/* ─────────────────────── CTA SECTION (Warm Light Background - Distinct from Footer) ─────────────────────── */}
+      <section className="py-20 px-5 sm:px-8 bg-surface-container-low border-t border-outline/10 text-center">
+        <div className="max-w-2xl mx-auto bg-surface rounded-3xl p-8 sm:p-12 border border-outline/15 shadow-sm space-y-6">
+          <Reveal>
+            <span className="text-xs uppercase tracking-widest text-tertiary font-bold block mb-1">
+              Plan Your Adventure
+            </span>
+            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-primary">
+              Ready to Experience Cielo Alto?
+            </h2>
+            <p className="text-on-surface-variant text-sm sm:text-base leading-relaxed max-w-lg mx-auto">
+              Book your mountain cabin today and enjoy free breakfast, bonfires, go-karts, and cool breezes in Tanay, Rizal.
+            </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+              <Link
+                href="/reserve"
+                className="w-full sm:w-auto bg-primary text-on-primary font-bold text-sm h-[52px] px-8 rounded-xl flex items-center justify-center hover:bg-primary-container hover:text-on-primary-container transition-colors shadow-md active:scale-95"
+              >
+                Book Your Stay
+              </Link>
+              <Link
+                href="/contact"
+                className="w-full sm:w-auto border border-outline/25 text-primary bg-surface font-semibold text-sm h-[52px] px-8 rounded-xl flex items-center justify-center hover:bg-surface-container transition-colors"
+              >
+                Contact Concierge
+              </Link>
             </div>
-          ))}
-        </div>
-
-        {/* Photo wall */}
-        <div className="mb-14">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Gallery</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-            {activityImages.slice(1, 10).map((src, idx) => (
-              <div key={idx} className="relative aspect-square rounded-xl overflow-hidden bg-gray-100">
-                <Image
-                  src={src}
-                  alt={`Cielo Alto activities photo ${idx + 2}`}
-                  fill
-                  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                  className="object-cover hover:scale-105 transition-transform duration-500"
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* CTA */}
-        <div className="bg-[#2d6a2d] rounded-2xl p-8 sm:p-12 text-center text-white">
-          <h2 className="text-3xl font-bold mb-3">Ready to experience it all?</h2>
-          <p className="text-[17px] text-white/80 mb-6 max-w-lg mx-auto">
-            Book your stay and enjoy activities, bonfire nights, great food, and mountain air all in one place.
-          </p>
-          <Link
-            href="/reserve"
-            className="inline-block bg-white text-[#2d6a2d] px-8 py-4 rounded-xl text-[17px] font-bold hover:bg-gray-100 transition-colors"
-          >
-            Book Your Stay
-          </Link>
+          </Reveal>
         </div>
       </section>
     </div>

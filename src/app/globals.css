@@ -1,34 +1,118 @@
 @import "tailwindcss";
 
 @theme {
-  /* Brand Colors — extracted from Cielo Alto logo */
-  --color-cielo-green: #2d6a2d;
-  --color-cielo-green-light: #4a9e4a;
-  --color-cielo-green-dark: #1a4a1a;
-  --color-cielo-earth: #8b5e3c;
-  --color-cielo-red: #c0392b;
-  --color-cielo-stone: #6b7280;
-  --color-cielo-cream: #faf7f2;
-  --color-cielo-white: #ffffff;
-  --color-cielo-dark: #1a1a1a;
-  --color-cielo-muted: #4a4a4a;
-  --color-cielo-border: #e5e0d8;
+  --color-surface: #fbf9f4;
+  --color-surface-dim: #dbdad5;
+  --color-surface-bright: #fbf9f4;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #f5f3ee;
+  --color-surface-container: #f0eee9;
+  --color-surface-container-high: #eae8e3;
+  --color-surface-container-highest: #e4e2dd;
+  --color-surface-variant: #e4e2dd;
+  --color-surface-tint: #516356;
+
+  --color-on-surface: #1b1c19;
+  --color-on-surface-variant: #434844;
+  --color-inverse-surface: #30312e;
+  --color-inverse-on-surface: #f2f1ec;
+  --color-outline: #737873;
+  --color-outline-variant: #c3c8c2;
+
+  --color-primary: #18281e;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #2d3e33;
+  --color-on-primary-container: #96a99b;
+  --color-inverse-primary: #b8cbbc;
+  --color-primary-fixed: #d4e7d8;
+  --color-primary-fixed-dim: #b8cbbc;
+  --color-on-primary-fixed: #0e1f15;
+  --color-on-primary-fixed-variant: #394b3f;
+
+  --color-secondary: #576063;
+  --color-on-secondary: #ffffff;
+  --color-secondary-container: #d8e1e5;
+  --color-on-secondary-container: #5b6468;
+  --color-secondary-fixed: #dbe4e8;
+  --color-secondary-fixed-dim: #bfc8cc;
+  --color-on-secondary-fixed: #141d20;
+  --color-on-secondary-fixed-variant: #3f484c;
+
+  --color-tertiary: #40190a;
+  --color-on-tertiary: #ffffff;
+  --color-tertiary-container: #5a2e1d;
+  --color-on-tertiary-container: #d4957e;
+  --color-tertiary-fixed: #ffdbcf;
+  --color-tertiary-fixed-dim: #fbb79e;
+  --color-on-tertiary-fixed: #341003;
+  --color-on-tertiary-fixed-variant: #693a28;
+
+  --color-background: #fbf9f4;
+  --color-on-background: #1b1c19;
+
+  --color-error: #ba1a1a;
+  --color-on-error: #ffffff;
+  --color-error-container: #ffdad6;
+  --color-on-error-container: #93000a;
+
+  --font-serif: var(--font-playfair), Georgia, serif;
+  --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
-* {
-  box-sizing: border-box;
+@layer base {
+  :root {
+    background-color: #fbf9f4;
+    color: #1b1c19;
+  }
+
+  [data-scroll-behavior="smooth"] {
+    scroll-behavior: smooth;
+  }
 }
 
-body {
-  background-color: var(--color-cielo-white);
-  color: var(--color-cielo-dark);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+/* Architectural A-Frame and Slanted Clip Utilities */
+.a-frame-crop-top-left {
+  clip-path: polygon(15% 0, 100% 0, 100% 100%, 0 100%, 0 15%);
 }
 
-/* Utility: large readable body text for elder-friendliness */
-.text-readable {
-  font-size: 1.0625rem; /* 17px */
-  line-height: 1.75;
+.a-frame-crop-bottom-right {
+  clip-path: polygon(0 0, 100% 0, 100% 85%, 85% 100%, 0 100%);
+}
+
+.a-frame-clip {
+  clip-path: polygon(0 15%, 100% 0, 100% 100%, 0 100%);
+}
+
+.a-frame-clip-reverse {
+  clip-path: polygon(0 0, 100% 15%, 100% 100%, 0 100%);
+}
+
+.slant-edge-bottom {
+  clip-path: polygon(0 0, 100% 0, 100% 92%, 0 100%);
+}
+
+.clip-a-frame {
+  clip-path: polygon(0 0, 100% 0, 100% 85%, 85% 100%, 0 100%);
+}
+
+/* Glassmorphism panel */
+.glass-panel {
+  background: rgba(251, 249, 244, 0.82);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(115, 120, 115, 0.15);
+}
+
+/* Hide scrollbar */
+@utility no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Safe padding for bottom nav */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0.75rem);
 }

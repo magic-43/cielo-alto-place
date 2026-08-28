@@ -314,6 +314,10 @@ export const resort = {
       "/images/restaurant/menu (2).jpg",
     ],
     restaurantImages: [
+      "/images/restaurant/live acoustic.jpg",
+      "/images/restaurant/721179713_1431535989012462_7642990396059947403_n.jpeg",
+      "/images/restaurant/722996775_1679501023268401_8787611284058355617_n.jpeg",
+      "/images/restaurant/723480757_984585327685224_6477256754918476011_n.jpeg",
       "/images/restaurant/photo_1_2026-08-26_10-22-58.jpg",
       "/images/restaurant/photo_2_2026-08-26_10-22-58.jpg",
       "/images/restaurant/photo_3_2026-08-26_10-22-58.jpg",
@@ -438,6 +442,17 @@ export const featuredRooms = rooms.filter((r) =>
 );
 
 export const activityImages = [
+  "/images/activities/cover.jpg",
+  "/images/activities/468434857_918210953604112_8734516923771420951_n.jpg",
+  "/images/activities/468435831_918210900270784_7158166831862479757_n.jpg",
+  "/images/activities/468482510_918210906937450_3873911303095158899_n.jpg",
+  "/images/activities/468529811_918210996937441_8060064480368368969_n.jpg",
+  "/images/activities/491735402_1177194257750806_2669294754168585564_n.jpg",
+  "/images/activities/577056348_1355285993274964_1974349196918093341_n.jpg",
+  "/images/activities/577148230_1355284846608412_5698591016020198075_n.jpg",
+  "/images/activities/600312928_1391629162973980_8418289452270346111_n.jpg",
+  "/images/activities/633030675_1440996134703949_3131819040525978174_n.jpg",
+  "/images/activities/665830522_1483732633763632_8675381043862118360_n.jpg",
   "/images/activities/photo_1_2026-08-26_10-21-07.jpg",
   "/images/activities/photo_2_2026-08-26_10-21-07.jpg",
   "/images/activities/photo_3_2026-08-26_10-21-07.jpg",

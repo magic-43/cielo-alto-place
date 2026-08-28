@@ -1,471 +1,895 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Image from "next/image";
-import { ChevronRight, ChevronLeft, Wind, Thermometer, Users, Check } from "lucide-react";
-import { rooms } from "@/data/resort";
+import { rooms, resort } from "@/data/resort";
 import type { RoomType } from "@/data/resort";
+import { ReservationProgress } from "@/components/ui/ReservationProgress";
+import { Upload, CheckCircle2, X, AlertCircle } from "lucide-react";
 
-// ─── Types ───────────────────────────────────────────────────
-type BookingState = {
-  step: number;
-  room: RoomType | null;
-  roomType: "fan" | "ac";
-  checkIn: string;
-  checkOut: string;
-  extraGuests: number;
-  guestName: string;
-  guestEmail: string;
-  guestPhone: string;
-  specialRequests: string;
-};
+type StepNumber = 1 | 2 | 3 | 4;
 
-// ─── Step indicator ─────────────────────────────────────────
-function StepBar({ step }: { step: number }) {
-  const steps = ["Choose Room", "Dates & Guests", "Your Info", "Review & Pay"];
-  return (
-    <div className="flex items-center justify-center gap-2 mb-8 px-2">
-      {steps.map((label, idx) => {
-        const num = idx + 1;
-        const active = step === num;
-        const done = step > num;
-        return (
-          <div key={label} className="flex items-center">
-            <div className={`flex flex-col items-center ${idx < steps.length - 1 ? "mr-2" : ""}`}>
-              <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${
-                  done ? "bg-[#2d6a2d] text-white" : active ? "bg-[#2d6a2d] text-white" : "bg-gray-100 text-gray-400"
-                }`}
-              >
-                {done ? <Check className="w-4 h-4" /> : num}
-              </div>
-              <span className={`text-[10px] mt-1 font-medium whitespace-nowrap hidden sm:block ${active ? "text-[#2d6a2d]" : "text-gray-400"}`}>
-                {label}
-              </span>
-            </div>
-            {idx < steps.length - 1 && (
-              <div className={`h-[2px] w-6 sm:w-12 mr-2 ${done ? "bg-[#2d6a2d]" : "bg-gray-200"}`} />
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
+function formatToday() {
+  const d = new Date();
+  return d.toISOString().split("T")[0];
 }
 
-// ─── STEP 1: Choose Room ─────────────────────────────────────
-function StepChooseRoom({ booking, setBooking }: { booking: BookingState; setBooking: (b: BookingState) => void }) {
-  return (
-    <div className="space-y-5">
-      <h2 className="text-2xl font-bold text-gray-900">Choose Your Room</h2>
-      <p className="text-[16px] text-gray-600">All rooms include free breakfast. Fan or AC selection comes next.</p>
-      <div className="grid grid-cols-1 gap-4">
-        {rooms.map((room) => {
-          const selected = booking.room?.slug === room.slug;
-          return (
-            <button
-              key={room.slug}
-              onClick={() => setBooking({ ...booking, room, roomType: room.hasAcOption ? "fan" : "fan" })}
-              className={`w-full text-left flex gap-4 p-4 rounded-2xl border-2 transition-all ${
-                selected ? "border-[#2d6a2d] bg-[#2d6a2d]/5" : "border-gray-200 hover:border-gray-300 bg-white"
-              }`}
-            >
-              <div className="relative w-24 h-20 rounded-xl overflow-hidden shrink-0 bg-gray-100">
-                <Image src={room.heroImage} alt={room.name} fill sizes="96px" className="object-cover" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-start justify-between gap-2">
-                  <h3 className="text-[17px] font-bold text-gray-900">{room.name}</h3>
-                  {selected && (
-                    <div className="w-5 h-5 bg-[#2d6a2d] rounded-full flex items-center justify-center shrink-0">
-                      <Check className="w-3 h-3 text-white" />
-                    </div>
-                  )}
-                </div>
-                <p className="text-[14px] text-gray-500 leading-snug mt-0.5">{room.shortDescription}</p>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  <span className="text-[13px] font-bold text-[#2d6a2d]">₱{room.basePaxRate.toLocaleString()}/night</span>
-                  {room.hasAcOption && <span className="text-[12px] text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">Fan / AC avail.</span>}
-                  <span className="text-[12px] text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">{room.standardGuests} base guests</span>
-                </div>
-              </div>
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
+function formatTomorrow() {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  return d.toISOString().split("T")[0];
 }
 
-// ─── STEP 2: Dates & Guests ──────────────────────────────────
-function StepDatesGuests({ booking, setBooking }: { booking: BookingState; setBooking: (b: BookingState) => void }) {
-  const room = booking.room!;
-  const today = new Date().toISOString().split("T")[0];
-
-  // nights calc
-  const nights =
-    booking.checkIn && booking.checkOut
-      ? Math.max(0, Math.round((new Date(booking.checkOut).getTime() - new Date(booking.checkIn).getTime()) / 86400000))
-      : 0;
-
-  const ratePerNight = booking.roomType === "ac" ? room.basePaxRate + room.acSurcharge : room.basePaxRate;
-  const extraFee = booking.extraGuests * 500 * nights;
-  const subtotal = ratePerNight * nights + extraFee;
-
-  return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-gray-900">Dates & Guests</h2>
-
-      {/* Fan / AC toggle — only for rooms that have AC */}
-      {room.hasAcOption && (
-        <div>
-          <p className="text-[15px] font-semibold text-gray-700 mb-3">Room Type</p>
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              onClick={() => setBooking({ ...booking, roomType: "fan" })}
-              className={`p-4 rounded-xl border-2 text-left transition-all ${booking.roomType === "fan" ? "border-[#2d6a2d] bg-[#2d6a2d]/5" : "border-gray-200"}`}
-            >
-              <Wind className="w-5 h-5 text-[#2d6a2d] mb-2" />
-              <p className="font-bold text-gray-900">Fan Room</p>
-              <p className="text-[14px] text-[#2d6a2d] font-bold mt-0.5">₱{room.basePaxRate.toLocaleString()}/night</p>
-            </button>
-            <button
-              onClick={() => setBooking({ ...booking, roomType: "ac" })}
-              className={`p-4 rounded-xl border-2 text-left transition-all ${booking.roomType === "ac" ? "border-[#2d6a2d] bg-[#2d6a2d]/5" : "border-gray-200"}`}
-            >
-              <Thermometer className="w-5 h-5 text-[#2d6a2d] mb-2" />
-              <p className="font-bold text-gray-900">Air-Conditioned</p>
-              <p className="text-[14px] text-[#2d6a2d] font-bold mt-0.5">₱{(room.basePaxRate + room.acSurcharge).toLocaleString()}/night</p>
-              <p className="text-[11px] text-gray-400">+₱500 AC surcharge</p>
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Date pickers */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-[15px] font-semibold text-gray-700 mb-2">Check-in Date</label>
-          <input
-            type="date"
-            min={today}
-            value={booking.checkIn}
-            onChange={(e) => setBooking({ ...booking, checkIn: e.target.value, checkOut: "" })}
-            className="w-full border-2 border-gray-200 rounded-xl px-4 py-3.5 text-[16px] focus:border-[#2d6a2d] focus:outline-none"
-          />
-          <p className="text-[13px] text-gray-500 mt-1">Check-in from 2:00 PM</p>
-        </div>
-        <div>
-          <label className="block text-[15px] font-semibold text-gray-700 mb-2">Check-out Date</label>
-          <input
-            type="date"
-            min={booking.checkIn || today}
-            value={booking.checkOut}
-            onChange={(e) => setBooking({ ...booking, checkOut: e.target.value })}
-            className="w-full border-2 border-gray-200 rounded-xl px-4 py-3.5 text-[16px] focus:border-[#2d6a2d] focus:outline-none"
-          />
-          <p className="text-[13px] text-gray-500 mt-1">Check-out by 12:00 Noon</p>
-        </div>
-      </div>
-
-      {/* Extra guests */}
-      {room.maxExtraGuests > 0 && (
-        <div>
-          <label className="block text-[15px] font-semibold text-gray-700 mb-1">
-            Extra Guests
-          </label>
-          <p className="text-[13px] text-gray-500 mb-2">
-            Base includes {room.standardGuests} guests. Add up to {room.maxExtraGuests} more at ₱500/head/night (includes breakfast & bed).
-          </p>
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => setBooking({ ...booking, extraGuests: Math.max(0, booking.extraGuests - 1) })}
-              className="w-12 h-12 rounded-xl border-2 border-gray-200 text-xl font-bold hover:border-[#2d6a2d] transition-colors"
-            >
-              −
-            </button>
-            <div className="text-center">
-              <span className="text-2xl font-bold text-gray-900">{booking.extraGuests}</span>
-              <p className="text-[12px] text-gray-500">extra guest{booking.extraGuests !== 1 ? "s" : ""}</p>
-            </div>
-            <button
-              onClick={() => setBooking({ ...booking, extraGuests: Math.min(room.maxExtraGuests, booking.extraGuests + 1) })}
-              className="w-12 h-12 rounded-xl border-2 border-gray-200 text-xl font-bold hover:border-[#2d6a2d] transition-colors"
-            >
-              +
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Summary */}
-      {nights > 0 && (
-        <div className="bg-[#faf7f2] rounded-xl p-5 border border-[#2d6a2d]/10 space-y-2">
-          <div className="flex justify-between text-[15px]">
-            <span className="text-gray-700">₱{ratePerNight.toLocaleString()} × {nights} night{nights !== 1 ? "s" : ""}</span>
-            <span className="font-semibold">₱{(ratePerNight * nights).toLocaleString()}</span>
-          </div>
-          {booking.extraGuests > 0 && (
-            <div className="flex justify-between text-[15px]">
-              <span className="text-gray-700">{booking.extraGuests} extra guest{booking.extraGuests !== 1 ? "s" : ""} × {nights} night{nights !== 1 ? "s" : ""}</span>
-              <span className="font-semibold">₱{extraFee.toLocaleString()}</span>
-            </div>
-          )}
-          <div className="border-t border-[#2d6a2d]/10 pt-2 flex justify-between text-[17px] font-bold">
-            <span>Estimated Total</span>
-            <span className="text-[#2d6a2d]">₱{subtotal.toLocaleString()}</span>
-          </div>
-        </div>
-      )}
-    </div>
-  );
+function calculateNights(start: string, end: string) {
+  if (!start || !end) return 1;
+  const s = new Date(start);
+  const e = new Date(end);
+  const diff = (e.getTime() - s.getTime()) / (1000 * 3600 * 24);
+  return diff > 0 ? Math.round(diff) : 1;
 }
 
-// ─── STEP 3: Guest Info ──────────────────────────────────────
-function StepGuestInfo({ booking, setBooking }: { booking: BookingState; setBooking: (b: BookingState) => void }) {
-  return (
-    <div className="space-y-5">
-      <h2 className="text-2xl font-bold text-gray-900">Your Information</h2>
-      <p className="text-[15px] text-gray-600">Please provide correct details for your booking confirmation.</p>
-
-      <div>
-        <label className="block text-[15px] font-semibold text-gray-700 mb-2">Full Name *</label>
-        <input
-          type="text"
-          value={booking.guestName}
-          onChange={(e) => setBooking({ ...booking, guestName: e.target.value })}
-          placeholder="Enter your full name"
-          className="w-full border-2 border-gray-200 rounded-xl px-4 py-3.5 text-[16px] focus:border-[#2d6a2d] focus:outline-none"
-        />
-      </div>
-
-      <div>
-        <label className="block text-[15px] font-semibold text-gray-700 mb-2">Email Address *</label>
-        <input
-          type="email"
-          value={booking.guestEmail}
-          onChange={(e) => setBooking({ ...booking, guestEmail: e.target.value })}
-          placeholder="your@email.com"
-          className="w-full border-2 border-gray-200 rounded-xl px-4 py-3.5 text-[16px] focus:border-[#2d6a2d] focus:outline-none"
-        />
-        <p className="text-[13px] text-gray-500 mt-1">Booking confirmation will be sent here</p>
-      </div>
-
-      <div>
-        <label className="block text-[15px] font-semibold text-gray-700 mb-2">Phone Number *</label>
-        <input
-          type="tel"
-          value={booking.guestPhone}
-          onChange={(e) => setBooking({ ...booking, guestPhone: e.target.value })}
-          placeholder="+63 9XX XXX XXXX"
-          className="w-full border-2 border-gray-200 rounded-xl px-4 py-3.5 text-[16px] focus:border-[#2d6a2d] focus:outline-none"
-        />
-      </div>
-
-      <div>
-        <label className="block text-[15px] font-semibold text-gray-700 mb-2">Special Requests <span className="text-gray-400 font-normal">(optional)</span></label>
-        <textarea
-          value={booking.specialRequests}
-          onChange={(e) => setBooking({ ...booking, specialRequests: e.target.value })}
-          placeholder="Allergies, arrival time, accessibility needs, etc."
-          rows={3}
-          className="w-full border-2 border-gray-200 rounded-xl px-4 py-3.5 text-[16px] focus:border-[#2d6a2d] focus:outline-none resize-none"
-        />
-      </div>
-    </div>
-  );
-}
-
-// ─── STEP 4: Review & Pay ────────────────────────────────────
-function StepReview({
-  booking,
-  onSubmit,
-  submitting,
-}: {
-  booking: BookingState;
-  onSubmit: () => void;
-  submitting: boolean;
-}) {
-  const room = booking.room!;
-  const nights = Math.max(0, Math.round(
-    (new Date(booking.checkOut).getTime() - new Date(booking.checkIn).getTime()) / 86400000
-  ));
-  const ratePerNight = booking.roomType === "ac" ? room.basePaxRate + room.acSurcharge : room.basePaxRate;
-  const extraFee = booking.extraGuests * 500 * nights;
-  const total = ratePerNight * nights + extraFee;
-
-  return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-gray-900">Review Your Booking</h2>
-
-      {/* Summary card */}
-      <div className="bg-[#faf7f2] rounded-2xl p-5 space-y-3 border border-[#2d6a2d]/10">
-        <div className="flex gap-3">
-          <div className="relative w-20 h-16 rounded-xl overflow-hidden shrink-0 bg-gray-100">
-            <Image src={room.heroImage} alt={room.name} fill sizes="80px" className="object-cover" />
-          </div>
-          <div>
-            <p className="font-bold text-[17px] text-gray-900">{room.name}</p>
-            <p className="text-[14px] text-gray-500 capitalize">{booking.roomType} room</p>
-          </div>
-        </div>
-
-        <div className="border-t border-gray-200 pt-3 space-y-2 text-[15px]">
-          <Row label="Check-in" value={booking.checkIn} />
-          <Row label="Check-out" value={booking.checkOut} />
-          <Row label="Nights" value={`${nights}`} />
-          <Row label="Base guests" value={`${room.standardGuests}`} />
-          {booking.extraGuests > 0 && <Row label="Extra guests" value={`${booking.extraGuests}`} />}
-          <Row label="Name" value={booking.guestName} />
-          <Row label="Email" value={booking.guestEmail} />
-          <Row label="Phone" value={booking.guestPhone} />
-        </div>
-
-        <div className="border-t border-gray-200 pt-3 space-y-1 text-[15px]">
-          <div className="flex justify-between">
-            <span className="text-gray-600">Room ({nights} night{nights !== 1 ? "s" : ""})</span>
-            <span>₱{(ratePerNight * nights).toLocaleString()}</span>
-          </div>
-          {extraFee > 0 && (
-            <div className="flex justify-between">
-              <span className="text-gray-600">Extra guests</span>
-              <span>₱{extraFee.toLocaleString()}</span>
-            </div>
-          )}
-          <div className="flex justify-between font-bold text-[17px] pt-2 border-t border-gray-200">
-            <span>Total</span>
-            <span className="text-[#2d6a2d]">₱{total.toLocaleString()}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Payment notice */}
-      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-[14px] text-amber-800">
-        <strong>Payment Instructions:</strong> After confirming, you will receive a booking reference. Send payment via GCash or Bank Transfer and upload your proof of payment to complete the booking. Details will be shown on the next page.
-      </div>
-
-      <button
-        onClick={onSubmit}
-        disabled={submitting}
-        className="w-full bg-[#2d6a2d] text-white py-4 rounded-xl text-[17px] font-bold hover:bg-[#1a4a1a] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-      >
-        {submitting ? "Processing…" : "Confirm Booking →"}
-      </button>
-    </div>
-  );
-}
-
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex justify-between">
-      <span className="text-gray-500">{label}</span>
-      <span className="font-medium text-gray-900">{value}</span>
-    </div>
-  );
-}
-
-// ─── Main reserve page ───────────────────────────────────────
 function ReserveInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const preselectedSlug = searchParams.get("room");
 
-  const preselectedRoom = preselectedSlug ? rooms.find((r) => r.slug === preselectedSlug) ?? null : null;
+  const [step, setStep] = useState<StepNumber>(1);
+  const [room, setRoom] = useState<RoomType>(
+    rooms.find((r) => r.slug === preselectedSlug) || rooms[0]
+  );
+  const [roomType, setRoomType] = useState<"fan" | "ac">("fan");
+  const [checkIn, setCheckIn] = useState(formatToday());
+  const [checkOut, setCheckOut] = useState(formatTomorrow());
+  const [extraGuests, setExtraGuests] = useState(0);
+  const [guestName, setGuestName] = useState("");
+  const [guestEmail, setGuestEmail] = useState("");
+  const [guestPhone, setGuestPhone] = useState("");
+  const [specialRequests, setSpecialRequests] = useState("");
 
-  const [booking, setBooking] = useState<BookingState>({
-    step: preselectedRoom ? 2 : 1,
-    room: preselectedRoom,
-    roomType: "fan",
-    checkIn: "",
-    checkOut: "",
-    extraGuests: 0,
-    guestName: "",
-    guestEmail: "",
-    guestPhone: "",
-    specialRequests: "",
-  });
+  // Payment proof state
+  const [paymentMethod, setPaymentMethod] = useState<"gcash" | "bank_transfer">("gcash");
+  const [proofFile, setProofFile] = useState<File | null>(null);
+  const [proofPreview, setProofPreview] = useState<string | null>(null);
+
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  const canAdvance = (() => {
-    if (booking.step === 1) return booking.room !== null;
-    if (booking.step === 2) return booking.checkIn !== "" && booking.checkOut !== "" && booking.checkOut > booking.checkIn;
-    if (booking.step === 3) return booking.guestName.trim() !== "" && booking.guestEmail.trim() !== "" && booking.guestPhone.trim() !== "";
-    return false;
-  })();
+  useEffect(() => {
+    if (preselectedSlug) {
+      const matched = rooms.find((r) => r.slug === preselectedSlug);
+      if (matched) {
+        setRoom(matched);
+        setExtraGuests(0);
+        setRoomType("fan");
+      }
+    }
+  }, [preselectedSlug]);
 
-  const handleSubmit = async () => {
+  const nights = calculateNights(checkIn, checkOut);
+  const roomBase = room.basePaxRate * nights;
+  const acCost = roomType === "ac" && room.hasAcOption ? room.acSurcharge * nights : 0;
+  const extraGuestCost = extraGuests * 500 * nights;
+  const totalAmount = roomBase + acCost + extraGuestCost;
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+      setError("Receipt file is too large. Please upload an image under 10MB.");
+      return;
+    }
+
+    setProofFile(file);
+    setError("");
+
+    if (file.type.startsWith("image/")) {
+      const url = URL.createObjectURL(file);
+      setProofPreview(url);
+    } else {
+      setProofPreview(null);
+    }
+  };
+
+  const handleRemoveFile = () => {
+    setProofFile(null);
+    if (proofPreview) {
+      URL.revokeObjectURL(proofPreview);
+      setProofPreview(null);
+    }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  // Step 1 Validation
+  const handleStep1Next = () => {
+    if (!checkIn || !checkOut) {
+      setError("Please select both check-in and check-out dates.");
+      return;
+    }
+    if (new Date(checkOut) <= new Date(checkIn)) {
+      setError("Check-out date must be after check-in date.");
+      return;
+    }
+    setError("");
+    setStep(2);
+    window.scrollTo({ top: 180, behavior: "smooth" });
+  };
+
+  // Step 2 Validation
+  const handleStep2Next = () => {
+    setError("");
+    setStep(3);
+    window.scrollTo({ top: 180, behavior: "smooth" });
+  };
+
+  // Step 3 Validation
+  const handleStep3Next = () => {
+    if (!guestName.trim()) {
+      setError("Please enter your full name.");
+      return;
+    }
+    if (!guestPhone.trim()) {
+      setError("Please enter your mobile/Viber phone number.");
+      return;
+    }
+    setError("");
+    setStep(4);
+    window.scrollTo({ top: 180, behavior: "smooth" });
+  };
+
+  // Step 4 Final Submission (Creates Booking & Uploads Payment Proof)
+  const handleFinalSubmit = async () => {
+    if (!proofFile) {
+      setError("Please attach your GCash or Bank Transfer payment receipt screenshot.");
+      return;
+    }
+
     setSubmitting(true);
     setError("");
+
     try {
-      const res = await fetch("/api/bookings", {
+      // 1. Create booking in Supabase
+      const bookingPayload = {
+        room_slug: room.slug,
+        room_type: roomType,
+        check_in: checkIn,
+        check_out: checkOut,
+        extra_guests: extraGuests,
+        guest_name: guestName,
+        guest_email: guestEmail,
+        guest_phone: guestPhone,
+        special_requests: specialRequests,
+      };
+
+      const bookingRes = await fetch("/api/bookings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          room_slug: booking.room!.slug,
-          room_type: booking.roomType,
-          check_in: booking.checkIn,
-          check_out: booking.checkOut,
-          extra_guests: booking.extraGuests,
-          guest_name: booking.guestName,
-          guest_email: booking.guestEmail,
-          guest_phone: booking.guestPhone,
-          special_requests: booking.specialRequests,
-        }),
+        body: JSON.stringify(bookingPayload),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Booking failed");
-      router.push(`/reserve/confirmation?ref=${data.reference}`);
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+
+      const bookingData = await bookingRes.json();
+
+      if (!bookingRes.ok) {
+        throw new Error(bookingData.error || "Failed to create booking.");
+      }
+
+      const reference = bookingData.reference;
+
+      // 2. Upload payment proof to Supabase storage & payment_submissions
+      const formData = new FormData();
+      formData.append("proofFile", proofFile);
+      formData.append("paymentMethod", paymentMethod);
+      formData.append("amountClaimed", totalAmount.toString());
+
+      const proofRes = await fetch(`/api/bookings/${reference}/payment-proof`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!proofRes.ok) {
+        const proofData = await proofRes.json();
+        throw new Error(proofData.error || "Failed to upload payment proof.");
+      }
+
+      // Success -> Route to confirmation page
+      router.push(`/reserve/confirmation?ref=${reference}`);
+    } catch (err: any) {
+      console.error(err);
+      setError(err?.message || "An error occurred while submitting your reservation. Please try again.");
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#faf7f2]">
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-10">
-        <h1 className="text-center text-3xl font-bold text-gray-900 mb-2">Reserve a Room</h1>
-        <p className="text-center text-[15px] text-gray-500 mb-8">Secure your mountain getaway at Cielo Alto Place</p>
+    <div className="bg-background min-h-screen pb-24">
+      {/* ─────────────────────── PAGE HERO ─────────────────────── */}
+      <section className="relative w-full h-[38vh] min-h-[280px] flex items-center justify-center overflow-hidden bg-primary">
+        <div className="absolute inset-0 z-0">
+          <Image
+            src="/images/book-ur-stay-cover.jpg"
+            alt="Cielo Alto Place Reservations"
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/25 to-black/60" />
+        </div>
 
-        <StepBar step={booking.step} />
+        <div className="relative z-10 text-center px-5 sm:px-8 max-w-[1200px] mx-auto mt-12">
+          <span className="text-xs font-bold uppercase tracking-[0.25em] text-primary-fixed mb-2 block">
+            Online Reservations · Tanay, Rizal
+          </span>
+          <h1 className="font-serif text-3xl sm:text-5xl font-bold text-on-primary mb-2">
+            Reserve Your Mountain Escape
+          </h1>
+          <p className="text-xs sm:text-sm text-surface-container-high max-w-lg mx-auto">
+            Direct booking with free breakfast, zero platform fees, and easy cashless payment.
+          </p>
+        </div>
+      </section>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8">
-          {booking.step === 1 && <StepChooseRoom booking={booking} setBooking={setBooking} />}
-          {booking.step === 2 && <StepDatesGuests booking={booking} setBooking={setBooking} />}
-          {booking.step === 3 && <StepGuestInfo booking={booking} setBooking={setBooking} />}
-          {booking.step === 4 && <StepReview booking={booking} onSubmit={handleSubmit} submitting={submitting} />}
+      {/* ─────────────────────── STEP PROGRESS BAR ─────────────────────── */}
+      <ReservationProgress
+        currentStep={step}
+        onStepClick={(targetStep) => setStep(targetStep)}
+      />
 
-          {error && (
-            <div className="mt-4 bg-red-50 border border-red-200 text-red-800 rounded-xl p-3 text-[14px]">
-              {error}
-            </div>
-          )}
+      {/* ─────────────────────── MAIN WIZARD BODY ─────────────────────── */}
+      <div className="max-w-[1200px] mx-auto px-5 sm:px-8 lg:px-12 pt-10">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
+          {/* ─────────────────────── LEFT: ACTIVE STEP FORM ─────────────────────── */}
+          <div className="lg:col-span-7 space-y-6">
+            {error && (
+              <div className="p-4 bg-red-50 border border-red-200 text-red-800 rounded-xl text-sm flex items-center gap-2 animate-fadeIn">
+                <AlertCircle className="w-5 h-5 shrink-0 text-red-600" />
+                <span>{error}</span>
+              </div>
+            )}
 
-          {/* Navigation buttons */}
-          {booking.step < 4 && (
-            <div className="flex justify-between items-center mt-8 pt-6 border-t border-gray-100">
-              {booking.step > 1 ? (
+            {/* ── STEP 1: DATES & GUESTS ── */}
+            {step === 1 && (
+              <div className="bg-surface rounded-2xl p-6 sm:p-8 border border-outline/15 shadow-sm space-y-6 animate-fadeIn">
+                <div>
+                  <span className="text-xs uppercase tracking-widest text-tertiary font-bold block mb-1">
+                    Step 1 of 4
+                  </span>
+                  <h2 className="font-serif text-2xl sm:text-3xl font-bold text-primary">
+                    When will you be staying?
+                  </h2>
+                  <p className="text-xs sm:text-sm text-on-surface-variant mt-1">
+                    Select your arrival and departure dates.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-bold uppercase tracking-wider text-on-surface-variant block mb-2">
+                      Check-in Date
+                    </label>
+                    <input
+                      type="date"
+                      min={formatToday()}
+                      value={checkIn}
+                      onChange={(e) => setCheckIn(e.target.value)}
+                      className="w-full bg-surface-container-low border border-outline/20 rounded-xl p-3.5 text-sm font-semibold text-primary focus:ring-2 focus:ring-primary focus:outline-none"
+                    />
+                    <span className="text-[11px] text-on-surface-variant mt-1 block">
+                      Check-in: 2:00 PM
+                    </span>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold uppercase tracking-wider text-on-surface-variant block mb-2">
+                      Check-out Date
+                    </label>
+                    <input
+                      type="date"
+                      min={checkIn || formatToday()}
+                      value={checkOut}
+                      onChange={(e) => setCheckOut(e.target.value)}
+                      className="w-full bg-surface-container-low border border-outline/20 rounded-xl p-3.5 text-sm font-semibold text-primary focus:ring-2 focus:ring-primary focus:outline-none"
+                    />
+                    <span className="text-[11px] text-on-surface-variant mt-1 block">
+                      Check-out: 12:00 Noon ({nights} {nights === 1 ? "night" : "nights"})
+                    </span>
+                  </div>
+                </div>
+
+                {/* Extra guests counter */}
+                <div className="p-5 bg-surface-container-low rounded-xl border border-outline/10 space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                      <span className="font-serif font-bold text-base text-primary block">
+                        Extra Guests (+₱500/head/night)
+                      </span>
+                      <span className="text-xs text-on-surface-variant">
+                        Includes extra bed setup and complimentary daily breakfast.
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setExtraGuests(Math.max(0, extraGuests - 1))}
+                        disabled={extraGuests === 0}
+                        className="w-10 h-10 rounded-lg bg-surface border border-outline/20 flex items-center justify-center font-bold text-primary disabled:opacity-30"
+                      >
+                        -
+                      </button>
+                      <span className="font-serif text-lg font-bold w-6 text-center text-primary">
+                        {extraGuests}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setExtraGuests(Math.min(4, extraGuests + 1))}
+                        disabled={extraGuests >= 4}
+                        className="w-10 h-10 rounded-lg bg-surface border border-outline/20 flex items-center justify-center font-bold text-primary disabled:opacity-30"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 p-3.5 bg-primary-container/30 rounded-xl text-xs text-primary font-medium">
+                  <span className="material-symbols-outlined text-[18px]">restaurant</span>
+                  Free breakfast included for all base guests every morning!
+                </div>
+
                 <button
-                  onClick={() => setBooking({ ...booking, step: booking.step - 1 })}
-                  className="flex items-center gap-2 text-[15px] text-gray-600 hover:text-gray-900 transition-colors"
+                  type="button"
+                  onClick={handleStep1Next}
+                  className="w-full bg-primary text-on-primary font-bold text-sm h-[54px] rounded-xl flex items-center justify-center gap-2 hover:bg-primary-container hover:text-on-primary-container transition-colors shadow-md active:scale-95"
                 >
-                  <ChevronLeft className="w-5 h-5" /> Back
+                  Continue to Select Cabin
+                  <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
                 </button>
-              ) : <div />}
+              </div>
+            )}
 
-              <button
-                onClick={() => setBooking({ ...booking, step: booking.step + 1 })}
-                disabled={!canAdvance}
-                className="flex items-center gap-2 bg-[#2d6a2d] text-white px-7 py-3.5 rounded-xl text-[15px] font-bold hover:bg-[#1a4a1a] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            {/* ── STEP 2: CABIN & COOLING ── */}
+            {step === 2 && (
+              <div className="bg-surface rounded-2xl p-6 sm:p-8 border border-outline/15 shadow-sm space-y-6 animate-fadeIn">
+                <div>
+                  <span className="text-xs uppercase tracking-widest text-tertiary font-bold block mb-1">
+                    Step 2 of 4
+                  </span>
+                  <h2 className="font-serif text-2xl sm:text-3xl font-bold text-primary">
+                    Choose Your Accommodations
+                  </h2>
+                  <p className="text-xs sm:text-sm text-on-surface-variant mt-1">
+                    Showing available cabins for {nights} {nights === 1 ? "night" : "nights"}.
+                  </p>
+                </div>
+
+                <div className="space-y-3.5">
+                  {rooms.map((r) => {
+                    const isSelected = room.slug === r.slug;
+                    const isMiniCabin = r.slug === "mini-cabin";
+                    const isOverCapacity = isMiniCabin && extraGuests > 0;
+
+                    return (
+                      <div
+                        key={r.slug}
+                        onClick={() => {
+                          if (isOverCapacity) return;
+                          setRoom(r);
+                          if (!r.hasAcOption) setRoomType("fan");
+                        }}
+                        className={`p-4 rounded-xl border transition-all cursor-pointer flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center ${
+                          isOverCapacity
+                            ? "opacity-40 cursor-not-allowed bg-surface-container-lowest"
+                            : isSelected
+                            ? "bg-surface-container-high border-primary ring-2 ring-primary/20 shadow-sm"
+                            : "bg-surface-container-low border-outline/15 hover:border-primary/40"
+                        }`}
+                      >
+                        <div className="flex gap-3.5 items-center">
+                          <div className="w-20 h-16 rounded-lg overflow-hidden relative shrink-0 bg-surface-container">
+                            <Image
+                              src={r.heroImage}
+                              alt={r.name}
+                              fill
+                              sizes="80px"
+                              className="object-cover"
+                            />
+                          </div>
+
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-serif font-bold text-base text-primary">
+                                {r.name}
+                              </h3>
+                              {r.tag && (
+                                <span className="text-[10px] bg-primary text-on-primary font-bold px-2 py-0.5 rounded">
+                                  {r.tag}
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-xs text-on-surface-variant block mt-0.5">
+                              {r.beds} · {r.hasCR === "private" ? "Private CR" : "Shared CR"} · {r.standardGuests} Base Guests
+                            </span>
+                            {isOverCapacity && (
+                              <span className="text-[11px] text-red-600 font-semibold block mt-0.5">
+                                Not available (Mini cabin accommodates max 2 guests)
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex sm:flex-col items-baseline sm:items-end justify-between w-full sm:w-auto shrink-0 border-t sm:border-t-0 pt-2 sm:pt-0 border-outline/10">
+                          <div className="font-serif text-lg font-bold text-primary">
+                            ₱{(r.basePaxRate * nights).toLocaleString()}
+                          </div>
+                          <span className="text-[11px] text-on-surface-variant">
+                            for {nights} {nights === 1 ? "night" : "nights"}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Cooling Option Selector */}
+                <div className="pt-2">
+                  <label className="text-xs font-bold uppercase tracking-wider text-primary block mb-3">
+                    Cooling Option for {room.name}
+                  </label>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    <label
+                      className={`p-4 rounded-xl border cursor-pointer flex items-center justify-between transition-all ${
+                        roomType === "fan"
+                          ? "bg-surface-container-high border-primary ring-2 ring-primary/20"
+                          : "bg-surface-container-low border-outline/15 hover:border-primary/40"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="radio"
+                          name="cooling"
+                          value="fan"
+                          checked={roomType === "fan"}
+                          onChange={() => setRoomType("fan")}
+                          className="w-4 h-4 text-primary"
+                        />
+                        <div>
+                          <div className="font-bold text-sm text-primary">Mountain Breeze Fan</div>
+                          <div className="text-xs text-on-surface-variant">Cool mountain night air</div>
+                        </div>
+                      </div>
+                      <span className="text-xs font-semibold text-primary">Included</span>
+                    </label>
+
+                    {room.hasAcOption ? (
+                      <label
+                        className={`p-4 rounded-xl border cursor-pointer flex items-center justify-between transition-all ${
+                          roomType === "ac"
+                            ? "bg-surface-container-high border-primary ring-2 ring-primary/20"
+                            : "bg-surface-container-low border-outline/15 hover:border-primary/40"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="radio"
+                            name="cooling"
+                            value="ac"
+                            checked={roomType === "ac"}
+                            onChange={() => setRoomType("ac")}
+                            className="w-4 h-4 text-primary"
+                          />
+                          <div>
+                            <div className="font-bold text-sm text-primary">Air Conditioning</div>
+                            <div className="text-xs text-on-surface-variant">Recommended for afternoons</div>
+                          </div>
+                        </div>
+                        <span className="text-xs font-bold text-primary">
+                          +₱{(500 * nights).toLocaleString()}
+                        </span>
+                      </label>
+                    ) : (
+                      <div className="p-4 rounded-xl bg-surface-container-lowest border border-outline/10 opacity-60 flex items-center justify-between">
+                        <span className="text-xs text-on-surface-variant">AC Upgrade Not Available</span>
+                        <span className="text-xs text-on-surface-variant italic">Fan Only</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setStep(1)}
+                    className="bg-surface-container-high text-primary font-semibold text-sm h-[54px] px-6 rounded-xl hover:bg-surface-variant transition-colors"
+                  >
+                    Back
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleStep2Next}
+                    className="flex-1 bg-primary text-on-primary font-bold text-sm h-[54px] rounded-xl flex items-center justify-center gap-2 hover:bg-primary-container hover:text-on-primary-container transition-colors shadow-md active:scale-95"
+                  >
+                    Continue to Guest Details
+                    <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* ── STEP 3: GUEST INFORMATION ── */}
+            {step === 3 && (
+              <div className="bg-surface rounded-2xl p-6 sm:p-8 border border-outline/15 shadow-sm space-y-6 animate-fadeIn">
+                <div>
+                  <span className="text-xs uppercase tracking-widest text-tertiary font-bold block mb-1">
+                    Step 3 of 4
+                  </span>
+                  <h2 className="font-serif text-2xl sm:text-3xl font-bold text-primary">
+                    Guest Information
+                  </h2>
+                  <p className="text-xs sm:text-sm text-on-surface-variant mt-1">
+                    Who should we address the reservation and check-in voucher to?
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-xs font-bold uppercase tracking-wider text-on-surface-variant block mb-1.5">
+                      Full Name *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Maria Santos"
+                      value={guestName}
+                      onChange={(e) => setGuestName(e.target.value)}
+                      className="w-full bg-surface-container-low border border-outline/20 rounded-xl p-3.5 text-sm text-on-surface focus:ring-2 focus:ring-primary focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-xs font-bold uppercase tracking-wider text-on-surface-variant block mb-1.5">
+                        Mobile / Viber Phone *
+                      </label>
+                      <input
+                        type="tel"
+                        required
+                        placeholder="e.g. 0917 123 4567"
+                        value={guestPhone}
+                        onChange={(e) => setGuestPhone(e.target.value)}
+                        className="w-full bg-surface-container-low border border-outline/20 rounded-xl p-3.5 text-sm text-on-surface focus:ring-2 focus:ring-primary focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-bold uppercase tracking-wider text-on-surface-variant block mb-1.5">
+                        Email Address (Optional)
+                      </label>
+                      <input
+                        type="email"
+                        placeholder="e.g. maria@gmail.com"
+                        value={guestEmail}
+                        onChange={(e) => setGuestEmail(e.target.value)}
+                        className="w-full bg-surface-container-low border border-outline/20 rounded-xl p-3.5 text-sm text-on-surface focus:ring-2 focus:ring-primary focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold uppercase tracking-wider text-on-surface-variant block mb-1.5">
+                      Special Requests / Notes (Optional)
+                    </label>
+                    <textarea
+                      rows={2}
+                      placeholder="e.g. Estimated arrival time, bringing pet, celebrating birthday..."
+                      value={specialRequests}
+                      onChange={(e) => setSpecialRequests(e.target.value)}
+                      className="w-full bg-surface-container-low border border-outline/20 rounded-xl p-3 text-sm text-on-surface focus:ring-2 focus:ring-primary focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setStep(2)}
+                    className="bg-surface-container-high text-primary font-semibold text-sm h-[54px] px-6 rounded-xl hover:bg-surface-variant transition-colors"
+                  >
+                    Back
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleStep3Next}
+                    className="flex-1 bg-primary text-on-primary font-bold text-sm h-[54px] rounded-xl flex items-center justify-center gap-2 hover:bg-primary-container hover:text-on-primary-container transition-colors shadow-md active:scale-95"
+                  >
+                    Continue to Payment & Upload
+                    <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* ── STEP 4: PAYMENT METHOD & PROOF UPLOAD ── */}
+            {step === 4 && (
+              <div className="bg-surface rounded-2xl p-6 sm:p-8 border border-outline/15 shadow-sm space-y-6 animate-fadeIn">
+                <div>
+                  <span className="text-xs uppercase tracking-widest text-tertiary font-bold block mb-1">
+                    Step 4 of 4
+                  </span>
+                  <h2 className="font-serif text-2xl sm:text-3xl font-bold text-primary">
+                    Payment & Proof of Transfer
+                  </h2>
+                  <p className="text-xs sm:text-sm text-on-surface-variant mt-1">
+                    Transfer the total amount via GCash or Bank Transfer, then upload your transaction receipt.
+                  </p>
+                </div>
+
+                {/* Payment Method Tabs */}
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod("gcash")}
+                    className={`p-4 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all ${
+                      paymentMethod === "gcash"
+                        ? "bg-surface-container-high border-primary ring-2 ring-primary/20 shadow-sm"
+                        : "bg-surface-container-low border-outline/15 hover:border-primary/40 opacity-70"
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-primary text-[24px]">phone_iphone</span>
+                    <span className="font-bold text-xs sm:text-sm text-primary">GCash</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod("bank_transfer")}
+                    className={`p-4 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all ${
+                      paymentMethod === "bank_transfer"
+                        ? "bg-surface-container-high border-primary ring-2 ring-primary/20 shadow-sm"
+                        : "bg-surface-container-low border-outline/15 hover:border-primary/40 opacity-70"
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-primary text-[24px]">account_balance</span>
+                    <span className="font-bold text-xs sm:text-sm text-primary">Bank Transfer (BDO)</span>
+                  </button>
+                </div>
+
+                {/* Account Details Box */}
+                <div className="bg-surface-container-low p-5 rounded-xl border border-outline/10 space-y-2">
+                  <div className="text-xs font-bold text-primary uppercase tracking-wider">
+                    {paymentMethod === "gcash" ? "GCash Account Details" : "Bank Transfer Details"}
+                  </div>
+
+                  {paymentMethod === "gcash" ? (
+                    <div className="space-y-1 text-xs sm:text-sm text-on-surface">
+                      <div className="flex justify-between">
+                        <span className="text-on-surface-variant">Account Name:</span>
+                        <strong className="text-primary font-mono">Cielo Alto Place</strong>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-on-surface-variant">Account / Mobile Number:</span>
+                        <strong className="text-primary font-mono text-base font-bold">0995 385 5517</strong>
+                      </div>
+                      <div className="flex justify-between border-t border-outline/10 pt-1.5 mt-1.5">
+                        <span className="text-on-surface-variant">Amount to Send:</span>
+                        <strong className="font-serif text-base text-primary font-bold">
+                          ₱{totalAmount.toLocaleString()}
+                        </strong>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-1 text-xs sm:text-sm text-on-surface">
+                      <div className="flex justify-between">
+                        <span className="text-on-surface-variant">Bank Name:</span>
+                        <strong className="text-primary">BDO Unibank</strong>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-on-surface-variant">Account Name:</span>
+                        <strong className="text-primary font-mono">Cielo Alto Place</strong>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-on-surface-variant">Account Number:</span>
+                        <strong className="text-primary font-mono text-base font-bold">0995-3855-517</strong>
+                      </div>
+                      <div className="flex justify-between border-t border-outline/10 pt-1.5 mt-1.5">
+                        <span className="text-on-surface-variant">Amount to Send:</span>
+                        <strong className="font-serif text-base text-primary font-bold">
+                          ₱{totalAmount.toLocaleString()}
+                        </strong>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Upload Receipt Dropzone */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold uppercase tracking-wider text-primary block">
+                    Upload Payment Proof / Receipt Screenshot *
+                  </label>
+
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,application/pdf"
+                    onChange={handleFileChange}
+                    className="hidden"
+                    id="receipt-upload"
+                  />
+
+                  {!proofFile ? (
+                    <label
+                      htmlFor="receipt-upload"
+                      className="border-2 border-dashed border-outline/30 hover:border-primary/60 bg-surface-container-low rounded-2xl p-8 flex flex-col items-center justify-center gap-3 text-center cursor-pointer transition-colors group"
+                    >
+                      <div className="w-14 h-14 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center group-hover:scale-105 transition-transform">
+                        <Upload className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <span className="text-sm font-bold text-primary block">
+                          Tap or click to select receipt image
+                        </span>
+                        <span className="text-xs text-on-surface-variant mt-0.5 block">
+                          Supports JPG, PNG, or PDF up to 10MB
+                        </span>
+                      </div>
+                    </label>
+                  ) : (
+                    <div className="p-4 bg-surface-container-high rounded-xl border border-outline/15 flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-3 overflow-hidden">
+                        {proofPreview ? (
+                          <div className="w-14 h-14 rounded-lg overflow-hidden relative shrink-0 border border-outline/20">
+                            <Image
+                              src={proofPreview}
+                              alt="Receipt preview"
+                              fill
+                              className="object-cover"
+                            />
+                          </div>
+                        ) : (
+                          <div className="w-14 h-14 rounded-lg bg-primary-container text-on-primary-container flex items-center justify-center shrink-0">
+                            <CheckCircle2 className="w-6 h-6" />
+                          </div>
+                        )}
+                        <div className="overflow-hidden text-left">
+                          <span className="text-sm font-semibold text-primary block truncate">
+                            {proofFile.name}
+                          </span>
+                          <span className="text-xs text-on-surface-variant">
+                            {(proofFile.size / 1024).toFixed(1)} KB · Ready for upload
+                          </span>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={handleRemoveFile}
+                        className="p-2 rounded-full hover:bg-surface-container-highest text-on-surface-variant shrink-0"
+                        title="Remove file"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setStep(3)}
+                    disabled={submitting}
+                    className="bg-surface-container-high text-primary font-semibold text-sm h-[54px] px-6 rounded-xl hover:bg-surface-variant transition-colors disabled:opacity-50"
+                  >
+                    Back
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleFinalSubmit}
+                    disabled={submitting || !proofFile}
+                    className="flex-1 bg-primary text-on-primary font-bold text-sm h-[54px] rounded-xl flex items-center justify-center gap-2 hover:bg-primary-container hover:text-on-primary-container transition-colors shadow-lg active:scale-95 disabled:opacity-50"
+                  >
+                    {submitting ? (
+                      "Submitting Reservation..."
+                    ) : (
+                      <>
+                        Submit Reservation & Payment Proof
+                        <CheckCircle2 className="w-5 h-5" />
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* ─────────────────────── RIGHT: LIVE STICKY BREAKDOWN CARD ─────────────────────── */}
+          <div className="lg:col-span-5 relative">
+            <div className="sticky top-28 space-y-6">
+              {/* Decorative Cabin Image */}
+              <div
+                className="relative w-full h-44 rounded-2xl overflow-hidden shadow-sm bg-surface-container"
+                style={{ clipPath: "polygon(0 0, 100% 10%, 100% 100%, 0 100%)" }}
               >
-                {booking.step === 3 ? "Review Booking" : "Continue"}
-                <ChevronRight className="w-5 h-5" />
-              </button>
+                <Image
+                  src={room.heroImage}
+                  alt={room.name}
+                  fill
+                  sizes="(max-width: 1024px) 100vw, 40vw"
+                  className="object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-primary/85 via-transparent to-transparent" />
+                <div className="absolute bottom-3 left-4 text-on-primary">
+                  <span className="font-serif text-lg font-bold block">{room.name}</span>
+                  <span className="text-xs text-primary-fixed flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[14px]">location_on</span>
+                    Km 57 Marcos Highway, Tanay
+                  </span>
+                </div>
+              </div>
+
+              {/* Price Breakdown Card */}
+              <div className="bg-surface rounded-2xl p-6 sm:p-8 border border-outline/15 shadow-sm space-y-6">
+                <h3 className="font-serif text-xl font-bold text-primary border-b border-outline/10 pb-4">
+                  Reservation Summary
+                </h3>
+
+                <div className="space-y-3 text-xs sm:text-sm text-on-surface">
+                  <div className="flex justify-between">
+                    <span className="text-on-surface-variant">
+                      {room.name} ({nights} {nights === 1 ? "night" : "nights"})
+                    </span>
+                    <span className="font-semibold">₱{roomBase.toLocaleString()}</span>
+                  </div>
+
+                  {acCost > 0 && (
+                    <div className="flex justify-between text-primary">
+                      <span>AC Upgrade ({nights} {nights === 1 ? "night" : "nights"})</span>
+                      <span className="font-semibold">+₱{acCost.toLocaleString()}</span>
+                    </div>
+                  )}
+
+                  {extraGuestCost > 0 && (
+                    <div className="flex justify-between text-primary">
+                      <span>Extra Guests ({extraGuests} pax × {nights}n)</span>
+                      <span className="font-semibold">+₱{extraGuestCost.toLocaleString()}</span>
+                    </div>
+                  )}
+
+                  <div className="flex justify-between text-on-surface-variant">
+                    <span>Complimentary Breakfast</span>
+                    <span className="font-bold text-primary uppercase">Free</span>
+                  </div>
+                </div>
+
+                <div className="border-t border-outline/15 pt-4">
+                  <div className="flex justify-between items-baseline">
+                    <span className="font-serif text-lg font-bold text-primary">Total Payable</span>
+                    <span className="font-serif text-3xl font-bold text-primary">
+                      ₱{totalAmount.toLocaleString()}
+                    </span>
+                  </div>
+                  <span className="text-[11px] text-on-surface-variant mt-1 block">
+                    Upload your proof of transfer in Step 4 to complete reservation.
+                  </span>
+                </div>
+
+                <div className="p-3.5 bg-surface-container-low rounded-xl border border-outline/10 text-xs text-on-surface-variant space-y-1">
+                  <div className="flex justify-between">
+                    <span>Check-in:</span>
+                    <strong className="text-on-surface">{checkIn} (2:00 PM)</strong>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Check-out:</span>
+                    <strong className="text-on-surface">{checkOut} (12:00 PM)</strong>
+                  </div>
+                </div>
+              </div>
             </div>
-          )}
+          </div>
         </div>
       </div>
     </div>
@@ -474,7 +898,13 @@ function ReserveInner() {
 
 export default function ReservePage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[#faf7f2]"><p className="text-gray-500">Loading…</p></div>}>
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-background">
+          <p className="text-on-surface-variant text-sm">Loading reservation experience...</p>
+        </div>
+      }
+    >
       <ReserveInner />
     </Suspense>
   );
