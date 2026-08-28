@@ -106,139 +106,60 @@ export default function ActivitiesPage() {
             </div>
           </Reveal>
 
-          {/* Clean Editorial Bento Grid without text clutters */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 auto-rows-[220px]">
-            {/* Bento Item 1: Large Span 2x2 Feature */}
-            <Reveal className="sm:col-span-2 sm:row-span-2 relative rounded-2xl overflow-hidden shadow-sm group bg-surface-container">
-              <Image
-                src={activityImages[1] || activityImages[0]}
-                alt="Highland activity moment"
-                fill
-                sizes="(max-width: 768px) 100vw, 50vw"
-                className="object-cover transition-transform duration-700 group-hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
-            </Reveal>
+          {/* Responsive 2-to-4 column mosaic bento grid */}
+          <div className="grid grid-cols-2 md:grid-cols-4 auto-rows-[150px] md:auto-rows-[250px] gap-4">
+            {activityImages.map((src, index) => {
+              let spanClasses = "col-span-1 row-span-1";
+              switch (index % 10) {
+                case 0:
+                  spanClasses = "col-span-2 row-span-2 md:col-span-2 md:row-span-2";
+                  break;
+                case 1:
+                  spanClasses = "col-span-1 row-span-1 md:col-span-1 md:row-span-2";
+                  break;
+                case 2:
+                  spanClasses = "col-span-1 row-span-1 md:col-span-1 md:row-span-1";
+                  break;
+                case 3:
+                  spanClasses = "col-span-2 row-span-1 md:col-span-1 md:row-span-1";
+                  break;
+                case 4:
+                  spanClasses = "col-span-1 row-span-2 md:col-span-2 md:row-span-1";
+                  break;
+                case 5:
+                  spanClasses = "col-span-1 row-span-1 md:col-span-1 md:row-span-1";
+                  break;
+                case 6:
+                  spanClasses = "col-span-1 row-span-1 md:col-span-1 md:row-span-2";
+                  break;
+                case 7:
+                  spanClasses = "col-span-2 row-span-2 md:col-span-2 md:row-span-2";
+                  break;
+                case 8:
+                  spanClasses = "col-span-1 row-span-1 md:col-span-1 md:row-span-1";
+                  break;
+                case 9:
+                  spanClasses = "col-span-1 row-span-1 md:col-span-1 md:row-span-1";
+                  break;
+              }
 
-            {/* Bento Item 2: Tall Vertical 1x2 */}
-            <Reveal delay={70} className="sm:col-span-1 sm:row-span-2 relative rounded-2xl overflow-hidden shadow-sm group bg-surface-container">
-              <Image
-                src={activityImages[2]}
-                alt="Highland activity moment"
-                fill
-                sizes="(max-width: 768px) 100vw, 25vw"
-                className="object-cover transition-transform duration-700 group-hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
-            </Reveal>
-
-            {/* Bento Item 3: Standard 1x1 */}
-            <Reveal delay={120} className="sm:col-span-1 sm:row-span-1 relative rounded-2xl overflow-hidden shadow-sm group bg-surface-container">
-              <Image
-                src={activityImages[3]}
-                alt="Highland activity moment"
-                fill
-                sizes="(max-width: 768px) 50vw, 25vw"
-                className="object-cover transition-transform duration-700 group-hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
-            </Reveal>
-
-            {/* Bento Item 4: Standard 1x1 */}
-            <Reveal delay={170} className="sm:col-span-1 sm:row-span-1 relative rounded-2xl overflow-hidden shadow-sm group bg-surface-container">
-              <Image
-                src={activityImages[4]}
-                alt="Highland activity moment"
-                fill
-                sizes="(max-width: 768px) 50vw, 25vw"
-                className="object-cover transition-transform duration-700 group-hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
-            </Reveal>
-
-            {/* Bento Item 5: Wide Landscape 2x1 */}
-            <Reveal delay={200} className="sm:col-span-2 sm:row-span-1 relative rounded-2xl overflow-hidden shadow-sm group bg-surface-container">
-              <Image
-                src={activityImages[5]}
-                alt="Highland activity moment"
-                fill
-                sizes="(max-width: 768px) 100vw, 50vw"
-                className="object-cover transition-transform duration-700 group-hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
-            </Reveal>
-
-            {/* Bento Item 6: Tall 1x2 */}
-            <Reveal delay={240} className="sm:col-span-1 sm:row-span-2 relative rounded-2xl overflow-hidden shadow-sm group bg-surface-container">
-              <Image
-                src={activityImages[6]}
-                alt="Highland activity moment"
-                fill
-                sizes="(max-width: 768px) 100vw, 25vw"
-                className="object-cover transition-transform duration-700 group-hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
-            </Reveal>
-
-            {/* Bento Item 7: Standard 1x1 */}
-            <Reveal delay={280} className="sm:col-span-1 sm:row-span-1 relative rounded-2xl overflow-hidden shadow-sm group bg-surface-container">
-              <Image
-                src={activityImages[7]}
-                alt="Highland activity moment"
-                fill
-                sizes="(max-width: 768px) 50vw, 25vw"
-                className="object-cover transition-transform duration-700 group-hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
-            </Reveal>
-
-            {/* Bento Item 8: Standard 1x1 */}
-            <Reveal delay={320} className="sm:col-span-1 sm:row-span-1 relative rounded-2xl overflow-hidden shadow-sm group bg-surface-container">
-              <Image
-                src={activityImages[8]}
-                alt="Highland activity moment"
-                fill
-                sizes="(max-width: 768px) 50vw, 25vw"
-                className="object-cover transition-transform duration-700 group-hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
-            </Reveal>
-
-            {/* Bento Item 9: Wide Landscape 2x1 */}
-            <Reveal delay={360} className="sm:col-span-2 sm:row-span-1 relative rounded-2xl overflow-hidden shadow-sm group bg-surface-container">
-              <Image
-                src={activityImages[9] || activityImages[0]}
-                alt="Highland activity moment"
-                fill
-                sizes="(max-width: 768px) 100vw, 50vw"
-                className="object-cover transition-transform duration-700 group-hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
-            </Reveal>
-
-            {/* Bento Item 10: Standard 1x1 */}
-            <Reveal delay={400} className="sm:col-span-1 sm:row-span-1 relative rounded-2xl overflow-hidden shadow-sm group bg-surface-container">
-              <Image
-                src={activityImages[10] || activityImages[1]}
-                alt="Highland activity moment"
-                fill
-                sizes="(max-width: 768px) 50vw, 25vw"
-                className="object-cover transition-transform duration-700 group-hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
-            </Reveal>
-
-            {/* Bento Item 11: Standard 1x1 */}
-            <Reveal delay={440} className="sm:col-span-1 sm:row-span-1 relative rounded-2xl overflow-hidden shadow-sm group bg-surface-container">
-              <Image
-                src={activityImages[11] || activityImages[2]}
-                alt="Highland activity moment"
-                fill
-                sizes="(max-width: 768px) 50vw, 25vw"
-                className="object-cover transition-transform duration-700 group-hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
-            </Reveal>
+              return (
+                <Reveal
+                  key={index}
+                  delay={(index % 4) * 80}
+                  className={`relative rounded-2xl overflow-hidden shadow-sm group bg-surface-container ${spanClasses}`}
+                >
+                  <Image
+                    src={src}
+                    alt={`Cielo Alto moment ${index + 1}`}
+                    fill
+                    sizes="(max-width: 768px) 50vw, 25vw"
+                    className="object-cover transition-transform duration-700 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/15 transition-colors duration-300" />
+                </Reveal>
+              );
+            })}
           </div>
         </div>
       </section>
