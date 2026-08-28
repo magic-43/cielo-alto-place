@@ -22,7 +22,7 @@ const QUICK_REPLIES = [
   { id: "pets", text: "Pet Policy" },
   { id: "directions", text: "Location & Directions" },
   { id: "payment", text: "Payment Methods" },
-  { id: "messenger", text: "Chat on Messenger" },
+  { id: "facebook", text: "Facebook Page" },
 ];
 
 function getBotAnswer(query: string): { text: string; button?: { text: string; link: string; external?: boolean } } {
@@ -116,7 +116,7 @@ export function ChatbotWidget() {
   }, [messages, isOpen]);
 
   const handleQuickReply = (id: string, text: string) => {
-    if (id === "messenger") {
+    if (id === "facebook" || id === "messenger") {
       window.open(resort.facebook, "_blank");
       return;
     }
