@@ -254,7 +254,7 @@ function ReserveInner() {
 
             {/* ── STEP 1: DATES & GUESTS ── */}
             {step === 1 && (
-              <div className="bg-surface rounded-2xl p-6 sm:p-8 border border-outline/15 shadow-sm space-y-6 animate-fadeIn">
+              <div className="bg-surface rounded-2xl p-5 sm:p-8 border border-outline/15 shadow-sm space-y-6 animate-fadeIn w-full max-w-full overflow-hidden box-border">
                 <div>
                   <span className="text-xs uppercase tracking-widest text-tertiary font-bold block mb-1">
                     Step 1 of 4
@@ -267,8 +267,8 @@ function ReserveInner() {
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full min-w-0">
+                  <div className="w-full min-w-0">
                     <label className="text-xs font-bold uppercase tracking-wider text-on-surface-variant block mb-2">
                       Check-in Date
                     </label>
@@ -277,14 +277,14 @@ function ReserveInner() {
                       min={formatToday()}
                       value={checkIn}
                       onChange={(e) => setCheckIn(e.target.value)}
-                      className="w-full bg-surface-container-low border border-outline/20 rounded-xl p-3.5 text-sm font-semibold text-primary focus:ring-2 focus:ring-primary focus:outline-none"
+                      className="w-full min-w-0 max-w-full box-border bg-surface-container-low border border-outline/20 rounded-xl p-3.5 text-base font-semibold text-primary focus:ring-2 focus:ring-primary focus:outline-none appearance-none"
                     />
                     <span className="text-[11px] text-on-surface-variant mt-1 block">
                       Check-in: 2:00 PM
                     </span>
                   </div>
 
-                  <div>
+                  <div className="w-full min-w-0">
                     <label className="text-xs font-bold uppercase tracking-wider text-on-surface-variant block mb-2">
                       Check-out Date
                     </label>
@@ -293,7 +293,7 @@ function ReserveInner() {
                       min={checkIn || formatToday()}
                       value={checkOut}
                       onChange={(e) => setCheckOut(e.target.value)}
-                      className="w-full bg-surface-container-low border border-outline/20 rounded-xl p-3.5 text-sm font-semibold text-primary focus:ring-2 focus:ring-primary focus:outline-none"
+                      className="w-full min-w-0 max-w-full box-border bg-surface-container-low border border-outline/20 rounded-xl p-3.5 text-base font-semibold text-primary focus:ring-2 focus:ring-primary focus:outline-none appearance-none"
                     />
                     <span className="text-[11px] text-on-surface-variant mt-1 block">
                       Check-out: 12:00 Noon ({nights} {nights === 1 ? "night" : "nights"})
@@ -302,7 +302,7 @@ function ReserveInner() {
                 </div>
 
                 {/* Extra guests counter */}
-                <div className="p-5 bg-surface-container-low rounded-xl border border-outline/10 space-y-3">
+                <div className="p-4 sm:p-5 bg-surface-container-low rounded-xl border border-outline/10 space-y-3 w-full min-w-0 box-border">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
                       <span className="font-serif font-bold text-base text-primary block">
@@ -318,7 +318,7 @@ function ReserveInner() {
                         type="button"
                         onClick={() => setExtraGuests(Math.max(0, extraGuests - 1))}
                         disabled={extraGuests === 0}
-                        className="w-10 h-10 rounded-lg bg-surface border border-outline/20 flex items-center justify-center font-bold text-primary disabled:opacity-30"
+                        className="w-10 h-10 rounded-lg bg-surface border border-outline/20 flex items-center justify-center font-bold text-primary disabled:opacity-30 cursor-pointer"
                       >
                         -
                       </button>
@@ -329,7 +329,7 @@ function ReserveInner() {
                         type="button"
                         onClick={() => setExtraGuests(Math.min(4, extraGuests + 1))}
                         disabled={extraGuests >= 4}
-                        className="w-10 h-10 rounded-lg bg-surface border border-outline/20 flex items-center justify-center font-bold text-primary disabled:opacity-30"
+                        className="w-10 h-10 rounded-lg bg-surface border border-outline/20 flex items-center justify-center font-bold text-primary disabled:opacity-30 cursor-pointer"
                       >
                         +
                       </button>
@@ -345,7 +345,7 @@ function ReserveInner() {
                 <button
                   type="button"
                   onClick={handleStep1Next}
-                  className="w-full bg-primary text-on-primary font-bold text-sm h-[54px] rounded-xl flex items-center justify-center gap-2 hover:bg-primary-container hover:text-on-primary-container transition-colors shadow-md active:scale-95"
+                  className="w-full bg-primary text-on-primary font-bold text-base h-[54px] rounded-xl flex items-center justify-center gap-2 hover:bg-primary-container hover:text-on-primary-container transition-colors shadow-md active:scale-95 cursor-pointer"
                 >
                   Continue to Select Cabin
                   <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
@@ -524,7 +524,7 @@ function ReserveInner() {
 
             {/* ── STEP 3: GUEST INFORMATION ── */}
             {step === 3 && (
-              <div className="bg-surface rounded-2xl p-6 sm:p-8 border border-outline/15 shadow-sm space-y-6 animate-fadeIn">
+              <div className="bg-surface rounded-2xl p-5 sm:p-8 border border-outline/15 shadow-sm space-y-6 animate-fadeIn w-full max-w-full overflow-hidden box-border">
                 <div>
                   <span className="text-xs uppercase tracking-widest text-tertiary font-bold block mb-1">
                     Step 3 of 4
@@ -537,8 +537,8 @@ function ReserveInner() {
                   </p>
                 </div>
 
-                <div className="space-y-4">
-                  <div>
+                <div className="space-y-4 w-full min-w-0">
+                  <div className="w-full min-w-0">
                     <label className="text-xs font-bold uppercase tracking-wider text-on-surface-variant block mb-1.5">
                       Full Name *
                     </label>
@@ -548,12 +548,12 @@ function ReserveInner() {
                       placeholder="e.g. Maria Santos"
                       value={guestName}
                       onChange={(e) => setGuestName(e.target.value)}
-                      className="w-full bg-surface-container-low border border-outline/20 rounded-xl p-3.5 text-sm text-on-surface focus:ring-2 focus:ring-primary focus:outline-none"
+                      className="w-full min-w-0 max-w-full box-border bg-surface-container-low border border-outline/20 rounded-xl p-3.5 text-base text-on-surface focus:ring-2 focus:ring-primary focus:outline-none"
                     />
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full min-w-0">
+                    <div className="w-full min-w-0">
                       <label className="text-xs font-bold uppercase tracking-wider text-on-surface-variant block mb-1.5">
                         Mobile / Viber Phone *
                       </label>
@@ -563,11 +563,11 @@ function ReserveInner() {
                         placeholder="e.g. 0917 123 4567"
                         value={guestPhone}
                         onChange={(e) => setGuestPhone(e.target.value)}
-                        className="w-full bg-surface-container-low border border-outline/20 rounded-xl p-3.5 text-sm text-on-surface focus:ring-2 focus:ring-primary focus:outline-none"
+                        className="w-full min-w-0 max-w-full box-border bg-surface-container-low border border-outline/20 rounded-xl p-3.5 text-base text-on-surface focus:ring-2 focus:ring-primary focus:outline-none"
                       />
                     </div>
 
-                    <div>
+                    <div className="w-full min-w-0">
                       <label className="text-xs font-bold uppercase tracking-wider text-on-surface-variant block mb-1.5">
                         Email Address (Optional)
                       </label>
@@ -576,12 +576,12 @@ function ReserveInner() {
                         placeholder="e.g. maria@gmail.com"
                         value={guestEmail}
                         onChange={(e) => setGuestEmail(e.target.value)}
-                        className="w-full bg-surface-container-low border border-outline/20 rounded-xl p-3.5 text-sm text-on-surface focus:ring-2 focus:ring-primary focus:outline-none"
+                        className="w-full min-w-0 max-w-full box-border bg-surface-container-low border border-outline/20 rounded-xl p-3.5 text-base text-on-surface focus:ring-2 focus:ring-primary focus:outline-none"
                       />
                     </div>
                   </div>
 
-                  <div>
+                  <div className="w-full min-w-0">
                     <label className="text-xs font-bold uppercase tracking-wider text-on-surface-variant block mb-1.5">
                       Special Requests / Notes (Optional)
                     </label>
@@ -590,7 +590,7 @@ function ReserveInner() {
                       placeholder="e.g. Estimated arrival time, bringing pet, celebrating birthday..."
                       value={specialRequests}
                       onChange={(e) => setSpecialRequests(e.target.value)}
-                      className="w-full bg-surface-container-low border border-outline/20 rounded-xl p-3 text-sm text-on-surface focus:ring-2 focus:ring-primary focus:outline-none"
+                      className="w-full min-w-0 max-w-full box-border bg-surface-container-low border border-outline/20 rounded-xl p-3.5 text-base text-on-surface focus:ring-2 focus:ring-primary focus:outline-none"
                     />
                   </div>
                 </div>
@@ -599,16 +599,16 @@ function ReserveInner() {
                   <button
                     type="button"
                     onClick={() => setStep(2)}
-                    className="bg-surface-container-high text-primary font-semibold text-sm h-[54px] px-6 rounded-xl hover:bg-surface-variant transition-colors"
+                    className="bg-surface-container-high text-primary font-semibold text-sm h-[54px] px-6 rounded-xl hover:bg-surface-variant transition-colors cursor-pointer"
                   >
                     Back
                   </button>
                   <button
                     type="button"
                     onClick={handleStep3Next}
-                    className="flex-1 bg-primary text-on-primary font-bold text-sm h-[54px] rounded-xl flex items-center justify-center gap-2 hover:bg-primary-container hover:text-on-primary-container transition-colors shadow-md active:scale-95"
+                    className="flex-1 bg-primary text-on-primary font-bold text-base h-[54px] rounded-xl flex items-center justify-center gap-2 hover:bg-primary-container hover:text-on-primary-container transition-colors shadow-md active:scale-95 cursor-pointer"
                   >
-                    Continue to Payment & Upload
+                    Continue to Payment &amp; Upload
                     <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
                   </button>
                 </div>
@@ -617,7 +617,7 @@ function ReserveInner() {
 
             {/* ── STEP 4: PAYMENT METHOD & PROOF UPLOAD ── */}
             {step === 4 && (
-              <div className="bg-surface rounded-2xl p-6 sm:p-8 border border-outline/15 shadow-sm space-y-6 animate-fadeIn">
+              <div className="bg-surface rounded-2xl p-5 sm:p-8 border border-outline/15 shadow-sm space-y-6 animate-fadeIn w-full max-w-full overflow-hidden box-border">
                 <div>
                   <span className="text-xs uppercase tracking-widest text-tertiary font-bold block mb-1">
                     Step 4 of 4

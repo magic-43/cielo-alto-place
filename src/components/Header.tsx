@@ -29,6 +29,18 @@ export default function Header() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Lock body scroll when mobile drawer is open
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileMenuOpen]);
+
   return (
     <>
       <header
@@ -98,44 +110,63 @@ export default function Header() {
           {/* Mobile Menu Trigger */}
           <div className="flex md:hidden items-center">
             <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className={`p-2 rounded-lg transition-colors ${
+              onClick={() => setMobileMenuOpen(true)}
+              className={`p-2 rounded-lg transition-colors cursor-pointer ${
                 scrolled
                   ? "text-primary hover:bg-surface-container"
                   : "text-white hover:bg-white/10"
               }`}
-              aria-label="Toggle Navigation Menu"
+              aria-label="Open Navigation Menu"
             >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              <Menu className="w-6 h-6" />
             </button>
           </div>
         </div>
       </header>
 
-      {/* Mobile Drawer Navigation */}
+      {/* Mobile Drawer Navigation — Overlays on Top of Header (z-[80]) */}
       {mobileMenuOpen && (
-        <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden flex justify-end animate-fadeIn">
-          <div className="w-4/5 max-w-sm bg-surface h-full shadow-2xl p-6 flex flex-col justify-between overflow-y-auto">
-            <div className="space-y-6 pt-16">
-              <div className="flex items-center gap-3 pb-6 border-b border-outline/10">
-                <Image
-                  src="/images/logo.png"
-                  alt="Cielo Alto Place"
-                  width={40}
-                  height={40}
-                  className="w-10 h-10 object-contain"
-                />
-                <div>
-                  <span className="font-serif text-lg font-bold text-primary block">
-                    Cielo Alto Place
-                  </span>
-                  <span className="text-[11px] text-tertiary font-bold tracking-widest uppercase">
-                    Tanay, Rizal
-                  </span>
+        <div className="fixed inset-0 z-[80] bg-black/65 backdrop-blur-sm md:hidden flex justify-end animate-fadeIn">
+          {/* Tap outside backdrop to close */}
+          <div
+            className="flex-1"
+            onClick={() => setMobileMenuOpen(false)}
+            aria-hidden="true"
+          />
+
+          <div className="w-[85%] max-w-sm bg-surface h-full shadow-2xl p-6 flex flex-col justify-between overflow-y-auto z-[81]">
+            <div className="space-y-6">
+              {/* Drawer Top Header: Logo + Close Button */}
+              <div className="flex items-center justify-between pb-5 border-b border-outline/10 pt-2">
+                <div className="flex items-center gap-3">
+                  <Image
+                    src="/images/logo.png"
+                    alt="Cielo Alto Place"
+                    width={40}
+                    height={40}
+                    className="w-10 h-10 object-contain"
+                  />
+                  <div>
+                    <span className="font-serif text-lg font-bold text-primary block leading-tight">
+                      Cielo Alto Place
+                    </span>
+                    <span className="text-[11px] text-tertiary font-bold tracking-widest uppercase block">
+                      Tanay, Rizal
+                    </span>
+                  </div>
                 </div>
+
+                <button
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="p-2 -mr-2 rounded-full text-on-surface-variant hover:bg-surface-container hover:text-primary transition-colors cursor-pointer"
+                  aria-label="Close navigation menu"
+                >
+                  <X className="w-6 h-6" />
+                </button>
               </div>
 
-              <nav className="flex flex-col space-y-4">
+              {/* Navigation Links */}
+              <nav className="flex flex-col space-y-3 pt-2">
                 {navLinks.map((link) => {
                   const isActive = pathname === link.href;
                   return (
@@ -143,10 +174,10 @@ export default function Header() {
                       key={link.href}
                       href={link.href}
                       onClick={() => setMobileMenuOpen(false)}
-                      className={`text-lg font-serif font-bold py-2 transition-colors flex items-center justify-between ${
+                      className={`text-lg font-serif font-bold py-2.5 transition-colors flex items-center justify-between rounded-xl px-3 ${
                         isActive
-                          ? "text-primary border-l-4 border-primary pl-3"
-                          : "text-on-surface-variant hover:text-primary pl-3"
+                          ? "bg-surface-container-high text-primary border-l-4 border-primary"
+                          : "text-on-surface-variant hover:bg-surface-container hover:text-primary"
                       }`}
                     >
                       <span>{link.label}</span>
@@ -163,14 +194,14 @@ export default function Header() {
               <Link
                 href="/reserve"
                 onClick={() => setMobileMenuOpen(false)}
-                className="w-full bg-primary text-on-primary font-bold text-sm h-[52px] rounded-xl flex items-center justify-center gap-2 hover:bg-primary-container hover:text-on-primary-container transition-colors shadow-md active:scale-95"
+                className="w-full bg-primary text-on-primary font-bold text-base h-[54px] rounded-xl flex items-center justify-center gap-2 hover:bg-primary-container hover:text-on-primary-container transition-colors shadow-md active:scale-95"
               >
                 Reserve Your Stay
               </Link>
               <div className="text-center">
                 <a
                   href={`tel:${resort.phone.replace(/\s/g, "")}`}
-                  className="text-xs font-semibold text-primary inline-flex items-center gap-1"
+                  className="text-xs font-semibold text-primary inline-flex items-center gap-1.5 hover:underline"
                 >
                   <span className="material-symbols-outlined text-[16px]">call</span>
                   {resort.phone}

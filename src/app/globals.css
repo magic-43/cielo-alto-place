@@ -116,3 +116,20 @@
 .pb-safe {
   padding-bottom: env(safe-area-inset-bottom, 0.75rem);
 }
+
+/* Prevent iOS Safari automatic zoom on form input focus */
+input,
+select,
+textarea {
+  font-size: 16px !important;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}

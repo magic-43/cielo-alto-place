@@ -317,7 +317,7 @@ export default function HomePage() {
                 className="group relative block overflow-hidden rounded-2xl shadow-md aspect-[4/3] sm:aspect-[16/9] lg:aspect-[2/1] bg-primary"
               >
                 <Image
-                  src="/images/activities/photo_1_2026-08-26_10-21-07.jpg"
+                  src="/images/activities/photo_6_2026-08-26_10-21-07.jpg"
                   alt="Bump Cars & Go-Kart in Tanay"
                   fill
                   sizes="(max-width: 1024px) 100vw, 66vw"
@@ -326,10 +326,10 @@ export default function HomePage() {
                 <div className="absolute inset-0 bg-gradient-to-t from-primary/95 via-primary/40 to-transparent" />
                 <div className="absolute inset-x-0 bottom-0 p-6 sm:p-10 flex flex-col items-start text-left text-on-primary">
                   <span className="bg-tertiary-container/90 text-on-tertiary-container text-[11px] font-bold uppercase tracking-widest px-3 py-1 rounded mb-3">
-                    Thrill & Play
+                    Thrill &amp; Play
                   </span>
                   <h3 className="font-serif text-2xl sm:text-4xl font-bold mb-2">
-                    Bump Cars & Go-Karts
+                    Bump Cars &amp; Go-Karts
                   </h3>
                   <p className="text-surface-variant text-xs sm:text-sm max-w-lg mb-4 line-clamp-2">
                     Race across high-altitude outdoor tracks surrounded by pine trees and cool mountain air.
@@ -348,7 +348,7 @@ export default function HomePage() {
                 className="group relative block overflow-hidden rounded-2xl shadow-md aspect-[4/3] sm:aspect-[16/9] lg:aspect-[1/1] bg-primary h-full"
               >
                 <Image
-                  src="/images/activities/photo_2_2026-08-26_10-21-07.jpg"
+                  src="/images/activities/665830522_1483732633763632_8675381043862118360_n.jpg"
                   alt="Bonfire Nights under Tanay stars"
                   fill
                   sizes="(max-width: 1024px) 100vw, 33vw"
@@ -379,7 +379,7 @@ export default function HomePage() {
                 className="group relative block overflow-hidden rounded-2xl shadow-md aspect-[4/3] sm:aspect-square bg-primary"
               >
                 <Image
-                  src="/images/activities/photo_3_2026-08-26_10-21-07.jpg"
+                  src="/images/activities/photo_5_2026-08-26_10-21-07.jpg"
                   alt="Carnival Games at Cielo Alto"
                   fill
                   sizes="(max-width: 1024px) 100vw, 33vw"
@@ -394,7 +394,7 @@ export default function HomePage() {
                     Carnival Games
                   </h3>
                   <p className="text-surface-variant text-xs mb-3 line-clamp-2">
-                    Win prizes, test your aim, and relax with our restorative massage chairs.
+                    Win prizes, test your aim, and enjoy fish scooping and arcade game stations.
                   </p>
                   <span className="inline-flex items-center gap-1 text-xs font-bold uppercase tracking-widest text-primary-fixed group-hover:text-on-primary transition-colors">
                     Explore <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
@@ -403,15 +403,15 @@ export default function HomePage() {
               </Link>
             </Reveal>
 
-            {/* Card 4: Pet-Friendly Grounds (Span 4) */}
+            {/* Card 4: Play Park & Pet-Friendly Grounds (Span 4) */}
             <Reveal delay={250} className="md:col-span-6 lg:col-span-4">
               <Link
                 href="/activities"
                 className="group relative block overflow-hidden rounded-2xl shadow-md aspect-[4/3] sm:aspect-square bg-primary"
               >
                 <Image
-                  src="/images/activities/photo_4_2026-08-26_10-21-07.jpg"
-                  alt="Pet-friendly resort grounds"
+                  src="/images/activities/photo_8_2026-08-26_10-21-07.jpg"
+                  alt="Outdoor playground and pet-friendly resort grounds"
                   fill
                   sizes="(max-width: 1024px) 100vw, 33vw"
                   className="object-cover transition-transform duration-1000 group-hover:scale-105 opacity-90"
@@ -419,13 +419,13 @@ export default function HomePage() {
                 <div className="absolute inset-0 bg-gradient-to-t from-primary/95 via-primary/40 to-transparent" />
                 <div className="absolute inset-x-0 bottom-0 p-6 sm:p-8 flex flex-col items-start text-left text-on-primary">
                   <span className="bg-primary-container text-on-primary-container text-[11px] font-bold uppercase tracking-widest px-3 py-1 rounded mb-2">
-                    Furry Family
+                    Family &amp; Pets
                   </span>
                   <h3 className="font-serif text-xl sm:text-2xl font-bold mb-1">
-                    Pet-Friendly Stays
+                    Playground &amp; Grounds
                   </h3>
                   <p className="text-surface-variant text-xs mb-3 line-clamp-2">
-                    Spacious outdoor grounds so your dogs and pets can enjoy the fresh air too.
+                    Spacious turf grounds and outdoor play park for kids and furry family members.
                   </p>
                   <span className="inline-flex items-center gap-1 text-xs font-bold uppercase tracking-widest text-primary-fixed group-hover:text-on-primary transition-colors">
                     Explore <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
@@ -441,7 +441,7 @@ export default function HomePage() {
                 className="group relative block overflow-hidden rounded-2xl shadow-md aspect-[4/3] sm:aspect-square bg-primary"
               >
                 <Image
-                  src="/images/activities/photo_7_2026-08-26_10-21-07.jpg"
+                  src="/images/activities/468482510_918210906937450_3873911303095158899_n.jpg"
                   alt="Scenic mountain photo spots"
                   fill
                   sizes="(max-width: 1024px) 100vw, 33vw"
