@@ -6,7 +6,7 @@ import { Reveal } from "@/components/ui/Reveal";
 import { MenuAccordion } from "@/components/ui/MenuAccordion";
 
 export const metadata: Metadata = {
-  title: "Dining & Acoustic Experience | Cielo Alto Place",
+  title: "Dining & Acoustic Experience",
   description:
     "Open daily 7AM–9PM. Fresh inihaw grills, silog breakfast, pizza, coffee, and live acoustic music nightly in Tanay, Rizal.",
 };

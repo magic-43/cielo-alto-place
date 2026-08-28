@@ -5,7 +5,7 @@ import { resort } from "@/data/resort";
 import { Reveal } from "@/components/ui/Reveal";
 
 export const metadata: Metadata = {
-  title: "About Us & Our Story | Cielo Alto Place",
+  title: "About Us & Our Story",
   description:
     "Discover the story of Cielo Alto Place — a mountain sanctuary in Tanay, Rizal built for quiet escapes, family gatherings, and connection with nature.",
 };

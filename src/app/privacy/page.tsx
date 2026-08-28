@@ -4,7 +4,7 @@ import { resort } from "@/data/resort";
 import { Reveal } from "@/components/ui/Reveal";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy | Cielo Alto Place",
+  title: "Privacy Policy",
   description: "Read the Privacy Policy regarding personal data, reservation records, and payment processing at Cielo Alto Place.",
 };
 

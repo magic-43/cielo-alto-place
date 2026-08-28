@@ -5,7 +5,7 @@ import { resort, activityImages } from "@/data/resort";
 import { Reveal } from "@/components/ui/Reveal";
 
 export const metadata: Metadata = {
-  title: "Guest Activities & Grounds | Cielo Alto Place",
+  title: "Guest Activities & Grounds",
   description:
     "Bump cars, go-karts, bonfire nights, carnival games, scenic photo spots, and pet-friendly mountain grounds at Cielo Alto Place.",
 };

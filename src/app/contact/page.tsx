@@ -4,7 +4,7 @@ import { Reveal } from "@/components/ui/Reveal";
 import Image from "next/image";
 
 export const metadata: Metadata = {
-  title: "Contact & Location | Cielo Alto Place",
+  title: "Contact & Location",
   description:
     "Find Cielo Alto Place at Km 57 Marcos Highway, Sitio Mayagay, Tanay, Rizal. Call +63 995 385 5517 or email cieloaltoplaceph@gmail.com.",
 };

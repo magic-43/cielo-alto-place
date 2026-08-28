@@ -4,7 +4,7 @@ import { resort } from "@/data/resort";
 import { Reveal } from "@/components/ui/Reveal";
 
 export const metadata: Metadata = {
-  title: "Terms & Conditions | Cielo Alto Place",
+  title: "Terms & Conditions",
   description: "Read the reservation, check-in, payment, and stay terms for Cielo Alto Place in Tanay, Rizal.",
 };
 
