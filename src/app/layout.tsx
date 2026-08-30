@@ -34,15 +34,37 @@ export const metadata: Metadata = {
     "A-frame cabin Philippines",
     "Ceilo Alto",
   ],
-  metadataBase: new URL("https://cieloaltoplace.org"),
+  metadataBase: new URL("https://www.cieloaltoplace.org"),
   icons: {
-    icon: "/favicon.png",
+    icon: [
+      { url: "/favicon.png", type: "image/png" },
+      { url: "/favicon.ico", sizes: "any" },
+    ],
     apple: "/favicon.png",
   },
   openGraph: {
+    title: "Cielo Alto Place – Hotel & Restaurant | Tanay, Rizal",
+    description:
+      "Experience mountain serenity at Cielo Alto Place in Tanay, Rizal. A-frame cabins, panoramic highland views, free breakfast, restaurant & activities. Book your stay today.",
+    url: "https://www.cieloaltoplace.org",
     siteName: "Cielo Alto Place",
     locale: "en_PH",
     type: "website",
+    images: [
+      {
+        url: "/og-image.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Cielo Alto Place – Hotel & Restaurant in Tanay, Rizal",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Cielo Alto Place – Hotel & Restaurant | Tanay, Rizal",
+    description:
+      "Experience mountain serenity at Cielo Alto Place in Tanay, Rizal. A-frame cabins, panoramic highland views, free breakfast, restaurant & activities.",
+    images: ["/og-image.jpg"],
   },
 };
 
