@@ -1,10 +1,14 @@
 import Image from "next/image";
 import Link from "next/link";
-import { rooms, resort } from "@/data/resort";
+import { resort } from "@/data/resort";
+import { getDynamicRooms } from "@/lib/resort-data";
 import { Reveal } from "@/components/ui/Reveal";
 
-export default function HomePage() {
-  const featured = rooms.filter((r) =>
+export const dynamic = "force-dynamic";
+
+export default async function HomePage() {
+  const allRooms = await getDynamicRooms();
+  const featured = allRooms.filter((r) =>
     ["loft-cabin", "regular-cabin", "family-cabin"].includes(r.slug)
   );
 
@@ -238,7 +242,7 @@ export default function HomePage() {
                 href="/rooms"
                 className="inline-flex items-center gap-2 bg-surface text-primary border border-outline/25 h-[52px] px-8 rounded-lg font-semibold text-sm hover:bg-surface-container transition-colors shadow-sm"
               >
-                Browse All {rooms.length} Accommodations
+                Browse All {allRooms.length} Accommodations
                 <span className="material-symbols-outlined text-sm">arrow_forward</span>
               </Link>
             </div>

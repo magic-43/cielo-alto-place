@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Find local room data for pricing rules
+    // Find local fallback room data for rules & metadata
     const roomData = rooms.find((r) => r.slug === room_slug);
     if (!roomData) {
       return NextResponse.json({ error: "Selected room not found." }, { status: 400 });
@@ -56,31 +56,12 @@ export async function POST(request: NextRequest) {
       Math.round((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24))
     );
 
-    // Validate extra guests
-    const extraGuestsCount = Number(extra_guests) || 0;
-    if (extraGuestsCount > roomData.maxExtraGuests) {
-      return NextResponse.json(
-        { error: `Maximum ${roomData.maxExtraGuests} extra guests allowed for ${roomData.name}.` },
-        { status: 400 }
-      );
-    }
-
-    const childGuestsCount = Number(child_guests) || 0;
-
-    // Calculate rates and totals
-    const isAc = room_type === "ac" && roomData.hasAcOption;
-    const ratePerNight = isAc ? roomData.basePaxRate + roomData.acSurcharge : roomData.basePaxRate;
-    const roomTotal = ratePerNight * nights;
-    const extraPersonTotal = extraGuestsCount * 500 * nights;
-    const grandTotal = roomTotal + extraPersonTotal;
-    const adultGuests = roomData.standardGuests + extraGuestsCount;
-
     const supabase = createAdminClient();
 
-    // 1. Get room ID from DB (filter by property_id='cielo')
+    // 1. Get room and dynamic pricing from DB (filter by property_id='cielo')
     let { data: roomRow, error: roomError } = await supabase
       .from("rooms")
-      .select("id, name, slug")
+      .select("id, name, slug, regular_rate, ac_surcharge, standard_guests, max_extra_guests, is_active")
       .eq("slug", room_slug)
       .eq("property_id", "cielo")
       .single();
@@ -89,7 +70,7 @@ export async function POST(request: NextRequest) {
       // Fallback query by slug if property_id was omitted
       const { data: anyRoom } = await supabase
         .from("rooms")
-        .select("id, name, slug")
+        .select("id, name, slug, regular_rate, ac_surcharge, standard_guests, max_extra_guests, is_active")
         .eq("slug", room_slug)
         .single();
       roomRow = anyRoom;
@@ -102,6 +83,56 @@ export async function POST(request: NextRequest) {
         { status: 404 }
       );
     }
+
+    // Fetch live resort settings for extra person fee
+    const { data: settingsRow } = await supabase
+      .from("resort_settings")
+      .select("extra_person_fee")
+      .or("property_id.eq.cielo,id.eq.2")
+      .order("id", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const extraPaxFee = Number(settingsRow?.extra_person_fee) || 500;
+
+    // Validate extra guests against dynamic DB limits
+    const maxAllowedExtra =
+      typeof roomRow.max_extra_guests === "number"
+        ? roomRow.max_extra_guests
+        : roomData.maxExtraGuests;
+
+    const standardGuestsCount =
+      typeof roomRow.standard_guests === "number"
+        ? roomRow.standard_guests
+        : roomData.standardGuests;
+
+    const extraGuestsCount = Number(extra_guests) || 0;
+    if (extraGuestsCount > maxAllowedExtra) {
+      return NextResponse.json(
+        { error: `Maximum ${maxAllowedExtra} extra guests allowed for ${roomRow.name || roomData.name}.` },
+        { status: 400 }
+      );
+    }
+
+    const childGuestsCount = Number(child_guests) || 0;
+
+    // Calculate rates and totals using live DB prices
+    const basePaxRate =
+      typeof roomRow.regular_rate === "number" && roomRow.regular_rate > 0
+        ? roomRow.regular_rate
+        : roomData.basePaxRate;
+
+    const acSurcharge =
+      typeof roomRow.ac_surcharge === "number" && roomRow.ac_surcharge > 0
+        ? roomRow.ac_surcharge
+        : roomData.acSurcharge;
+
+    const isAc = room_type === "ac" && roomData.hasAcOption;
+    const ratePerNight = isAc ? basePaxRate + acSurcharge : basePaxRate;
+    const roomTotal = ratePerNight * nights;
+    const extraPersonTotal = extraGuestsCount * extraPaxFee * nights;
+    const grandTotal = roomTotal + extraPersonTotal;
+    const adultGuests = standardGuestsCount + extraGuestsCount;
 
     // 2. Idempotency Check if client_request_id provided
     const requestId = client_request_id || crypto.randomUUID();
@@ -158,7 +189,7 @@ export async function POST(request: NextRequest) {
         regular_rate_snapshot: ratePerNight,
         discount_percentage_snapshot: 0,
         discounted_rate_snapshot: ratePerNight,
-        extra_person_fee_snapshot: 500,
+        extra_person_fee_snapshot: extraPaxFee,
         security_deposit_snapshot: 0,
         room_total: roomTotal,
         extra_person_total: extraPersonTotal,

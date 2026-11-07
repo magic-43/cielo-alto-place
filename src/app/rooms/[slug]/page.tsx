@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { rooms, getRoomBySlug } from "@/data/resort";
+import { rooms } from "@/data/resort";
+import { getDynamicRoomBySlug } from "@/lib/resort-data";
 import { RoomDetailClient } from "./RoomDetailClient";
+
+export const dynamic = "force-dynamic";
 
 export async function generateStaticParams() {
   return rooms.map((r) => ({ slug: r.slug }));
@@ -14,7 +17,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const room = getRoomBySlug(slug);
+  const room = await getDynamicRoomBySlug(slug);
   if (!room) return { title: "Room Not Found" };
   return {
     title: `${room.name} – Accommodations`,
@@ -28,7 +31,7 @@ export default async function RoomDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const room = getRoomBySlug(slug);
+  const room = await getDynamicRoomBySlug(slug);
 
   if (!room) notFound();
 

@@ -4,7 +4,8 @@ import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { MessageSquare, X, Send, Phone, MessageCircle } from "lucide-react";
-import { resort, rooms } from "@/data/resort";
+import { resort, rooms as fallbackRooms, type RoomType } from "@/data/resort";
+import { useCieloRooms } from "@/hooks/useCieloRooms";
 
 type Message = {
   id: string;
@@ -25,12 +26,21 @@ const QUICK_REPLIES = [
   { id: "facebook", text: "Facebook Page" },
 ];
 
-function getBotAnswer(query: string): { text: string; button?: { text: string; link: string; external?: boolean } } {
+function formatRoomsSummary(roomsList: RoomType[]) {
+  const list = roomsList && roomsList.length > 0 ? roomsList : fallbackRooms;
+  const lines = list.map(
+    (r) =>
+      `• ${r.name} (${r.standardGuests}${r.maxExtraGuests > 0 ? `-${r.standardGuests + r.maxExtraGuests}` : ""} pax): ₱${r.basePaxRate.toLocaleString()}/night`
+  );
+  return `We offer cozy mountain accommodations:\n${lines.join("\n")}\n\nAll rates include complimentary breakfast! Optional AC upgrade is available for +₱500/night.`;
+}
+
+function getBotAnswer(query: string, roomsList: RoomType[] = fallbackRooms): { text: string; button?: { text: string; link: string; external?: boolean } } {
   const q = query.toLowerCase();
 
   if (q.includes("room") || q.includes("cabin") || q.includes("rate") || q.includes("price") || q.includes("cost") || q.includes("how much")) {
     return {
-      text: "We offer cozy mountain accommodations:\n• Mini Cabin (2 pax): ₱3,000/night\n• Regular Cabin (2-4 pax): ₱4,000/night\n• Holiday Rooms (2-4 pax): ₱4,000 - ₱4,500/night\n• Family Cabin (4-6 pax): ₱6,000/night\n• Loft Cabin (4-8 pax): ₱7,000/night\n\nAll rates include complimentary breakfast! Optional AC upgrade is available for +₱500/night.",
+      text: formatRoomsSummary(roomsList),
       button: { text: "View All Cabins", link: "/rooms" },
     };
   }
@@ -96,6 +106,7 @@ function getBotAnswer(query: string): { text: string; button?: { text: string; l
 }
 
 export function ChatbotWidget() {
+  const { rooms: dynamicRooms } = useCieloRooms();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -131,7 +142,7 @@ export function ChatbotWidget() {
           botResponse = {
             id: (Date.now() + 1).toString(),
             sender: "bot",
-            text: "We have 6 cabin categories:\n• Mini Cabin (₱3,000)\n• Regular Cabin (₱4,000)\n• Holiday Rooms (₱4,000–₱4,500)\n• Family Cabin (₱6,000)\n• Loft Cabin (₱7,000)\n\nAll stays include free breakfast. AC upgrade is available for +₱500/night.",
+            text: formatRoomsSummary(dynamicRooms),
             button: { text: "View Accommodations", link: "/rooms" },
           };
           break;
@@ -210,7 +221,7 @@ export function ChatbotWidget() {
     setInputValue("");
 
     setTimeout(() => {
-      const answer = getBotAnswer(userText);
+      const answer = getBotAnswer(userText, dynamicRooms);
       setMessages((prev) => [
         ...prev,
         {

@@ -8,6 +8,7 @@ import type { RoomType } from "@/data/resort";
 import { ReservationProgress } from "@/components/ui/ReservationProgress";
 import { Upload, CheckCircle2, X, AlertCircle, RotateCcw } from "lucide-react";
 import { useResortSettings } from "@/hooks/useResortSettings";
+import { useCieloRooms } from "@/hooks/useCieloRooms";
 
 type StepNumber = 1 | 2 | 3 | 4;
 const STORAGE_KEY = "cielo_reserve_draft";
@@ -51,6 +52,8 @@ function ReserveInner() {
     checkOutTime,
   } = useResortSettings();
 
+  const { rooms: dynamicRooms } = useCieloRooms();
+
   const [step, setStep] = useState<StepNumber>(1);
   const [room, setRoom] = useState<RoomType | null>(() => {
     if (preselectedSlug) {
@@ -86,7 +89,7 @@ function ReserveInner() {
         if (parsed.checkOut) setCheckOut(parsed.checkOut);
         if (typeof parsed.extraGuests === "number") setExtraGuests(parsed.extraGuests);
         if (parsed.roomSlug && !preselectedSlug) {
-          const matched = rooms.find((r) => r.slug === parsed.roomSlug);
+          const matched = dynamicRooms.find((r) => r.slug === parsed.roomSlug) || rooms.find((r) => r.slug === parsed.roomSlug);
           if (matched) setRoom(matched);
         }
         if (parsed.roomType) setRoomType(parsed.roomType);
@@ -99,7 +102,22 @@ function ReserveInner() {
     } catch (err) {
       console.warn("Could not restore saved booking draft:", err);
     }
-  }, [preselectedSlug]);
+  }, [preselectedSlug, dynamicRooms]);
+
+  // Keep selected room's pricing in sync with dynamicRooms
+  useEffect(() => {
+    if (room) {
+      const updated = dynamicRooms.find((r) => r.slug === room.slug);
+      if (
+        updated &&
+        (updated.basePaxRate !== room.basePaxRate ||
+          updated.acSurcharge !== room.acSurcharge ||
+          updated.name !== room.name)
+      ) {
+        setRoom(updated);
+      }
+    }
+  }, [dynamicRooms, room]);
 
   // 2. Persist state to sessionStorage whenever user makes changes
   useEffect(() => {
@@ -138,14 +156,14 @@ function ReserveInner() {
   // Handle URL preselected room
   useEffect(() => {
     if (preselectedSlug) {
-      const matched = rooms.find((r) => r.slug === preselectedSlug);
+      const matched = dynamicRooms.find((r) => r.slug === preselectedSlug) || rooms.find((r) => r.slug === preselectedSlug);
       if (matched) {
         setRoom(matched);
         setExtraGuests(0);
         setRoomType("fan");
       }
     }
-  }, [preselectedSlug]);
+  }, [preselectedSlug, dynamicRooms]);
 
   // Clear booking draft and restart
   const handleResetDraft = () => {
@@ -503,7 +521,7 @@ function ReserveInner() {
                 </div>
 
                 <div className="space-y-3.5">
-                  {rooms.map((r) => {
+                  {dynamicRooms.map((r) => {
                     const isSelected = room?.slug === r.slug;
                     const isMiniCabin = r.slug === "mini-cabin";
                     const isOverCapacity = isMiniCabin && extraGuests > 0;

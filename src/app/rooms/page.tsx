@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { rooms } from "@/data/resort";
+import { getDynamicRooms } from "@/lib/resort-data";
 import { Reveal } from "@/components/ui/Reveal";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Accommodations & Cabins",
@@ -10,7 +12,8 @@ export const metadata: Metadata = {
     "Explore our highland cabins in Tanay, Rizal. Loft Cabin, Family Cabin, Regular Cabin, Mini Cabin, and Holiday Rooms with free breakfast and optional AC.",
 };
 
-export default function RoomsPage() {
+export default async function RoomsPage() {
+  const rooms = await getDynamicRooms();
   return (
     <div className="min-h-screen bg-background pb-20">
       {/* ─────────────────────── PAGE HERO ─────────────────────── */}
